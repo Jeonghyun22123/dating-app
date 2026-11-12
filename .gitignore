@@ -45,3 +45,8 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+
+# Deno
+supabase/functions/deno.lock
+supabase/functions/.env
+supabase/.temp/

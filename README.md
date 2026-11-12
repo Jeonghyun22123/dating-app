@@ -30,15 +30,48 @@ npm run web
 Supabase 대시보드 > SQL Editor 에 [`supabase_migration.sql`](./supabase_migration.sql) 전체를 붙여넣고 한 번 실행합니다.
 기획서 스키마에서 보완한 내용은 파일 상단 주석에 정리되어 있습니다.
 
+### Phase 2 (온보딩 · 사진 · 셀카 인증)
+
+1. SQL Editor 에 [`supabase_phase2.sql`](./supabase_phase2.sql) 전체를 붙여넣고 실행 (Storage 버킷 2개 포함)
+2. Edge Function 2개 배포 (프로젝트 ref 는 대시보드 주소 `supabase.com/dashboard/project/<ref>` 에서 확인)
+
+```bash
+npx supabase login
+```
+
+```bash
+npx supabase link --project-ref <ref>
+```
+
+```bash
+npx supabase functions deploy moderate-photo update-profile-embedding
+```
+
+3. (선택) API 키 등록 — 없으면 사진 검수는 테스트 모드로 통과, 임베딩은 건너뜁니다. 항목은 [`supabase/functions/.env.example`](./supabase/functions/.env.example) 참고.
+
+```bash
+npx supabase secrets set SIGHTENGINE_API_USER=... SIGHTENGINE_API_SECRET=... OPENAI_API_KEY=...
+```
+
 ## 구조
 
 ```
 src/
-  app/          Expo Router 화면 (_layout.tsx, index.tsx)
-  lib/          env.ts, supabase.ts, analytics.ts(PostHog), query-client.ts
-  providers/    app-providers.tsx (Query + PostHog + 세션 동기화 + 화면 추적)
-  stores/       auth-store.ts (Zustand)
-supabase_migration.sql
+  app/            sign-in, sign-up, onboarding, (app)/index — _layout.tsx 가 로그인·온보딩 상태로 접근 제어
+  components/ui/  Button, TextField, Chip, Screen
+  features/
+    identity/     성인 검증 로직(adult-verification.ts), 본인확인 수단 경계(identity-provider.ts)
+    onboarding/   온보딩 단계 화면 (기본 정보 → 프로필 → 동네 → 사진 → 셀카 → 완료)
+    profile/      프로필 조회·저장·위치·임베딩 요청
+    photos/       사진 선택·압축·업로드·검수 요청, 셀카 제출
+  lib/            env, supabase, auth, analytics(PostHog), query-client
+  providers/      app-providers.tsx
+  stores/         auth-store, onboarding-store (Zustand)
+supabase/functions/
+  moderate-photo/             Sightengine 사진·셀카 검수
+  update-profile-embedding/   OpenAI 임베딩 → profiles.embedding
+supabase_migration.sql        Phase 1 스키마
+supabase_phase2.sql           Phase 2 스키마 + Storage
 ```
 
 ## 새 패키지 추가 시
