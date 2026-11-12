@@ -53,17 +53,28 @@ npx supabase functions deploy moderate-photo update-profile-embedding
 npx supabase secrets set SIGHTENGINE_API_USER=... SIGHTENGINE_API_SECRET=... OPENAI_API_KEY=...
 ```
 
+### Phase 3 (추천 · 매칭 · 채팅)
+
+1. SQL Editor 에 [`supabase_phase3.sql`](./supabase_phase3.sql) 전체를 붙여넣고 실행
+2. (개발용) 혼자 테스트하려면 [`supabase_seed_test_users.sql`](./supabase_seed_test_users.sql) 로 가짜 프로필 8명 생성.
+   내 위치 근처에 만들어지며, 그중 4명은 나에게 이미 관심을 보낸 상태라 바로 매칭을 확인할 수 있습니다.
+   지울 때는 파일 맨 아래 "정리" 쿼리를 실행하세요.
+
 ## 구조
 
 ```
 src/
-  app/            sign-in, sign-up, onboarding, (app)/index — _layout.tsx 가 로그인·온보딩 상태로 접근 제어
-  components/ui/  Button, TextField, Chip, Screen
+  app/            sign-in, sign-up, onboarding, (app)/(tabs)/{index,matches,profile}, (app)/chat/[matchId]
+                  _layout.tsx 가 로그인·온보딩 상태로 접근 제어
+  components/ui/  Button, TextField, Chip, Screen, Avatar
   features/
     identity/     성인 검증 로직(adult-verification.ts), 본인확인 수단 경계(identity-provider.ts)
     onboarding/   온보딩 단계 화면 (기본 정보 → 프로필 → 동네 → 사진 → 셀카 → 완료)
     profile/      프로필 조회·저장·위치·임베딩 요청
     photos/       사진 선택·압축·업로드·검수 요청, 셀카 제출
+    discover/     추천 목록, 관심 표현/넘기기
+    chat/         매칭 목록, 메시지, 실시간 구독
+    safety/       신고·차단·매칭 해제 시트
   lib/            env, supabase, auth, analytics(PostHog), query-client
   providers/      app-providers.tsx
   stores/         auth-store, onboarding-store (Zustand)
@@ -72,6 +83,8 @@ supabase/functions/
   update-profile-embedding/   OpenAI 임베딩 → profiles.embedding
 supabase_migration.sql        Phase 1 스키마
 supabase_phase2.sql           Phase 2 스키마 + Storage
+supabase_phase3.sql           Phase 3 추천·매칭·채팅 함수
+supabase_seed_test_users.sql  개발용 가짜 프로필
 ```
 
 ## 새 패키지 추가 시

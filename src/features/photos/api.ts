@@ -44,6 +44,21 @@ export function moderationMessage(reason: string | null | undefined): string {
   }
 }
 
+/**
+ * 비공개 버킷의 사진 경로들을 1시간짜리 Signed URL 로 바꿉니다.
+ * 파일이 없거나 볼 권한이 없는 경로는 결과에서 빠집니다.
+ */
+export async function signPhotoPaths(paths: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(paths.filter(Boolean))];
+  if (unique.length === 0) return new Map();
+  const { data } = await supabase.storage.from(PROFILE_BUCKET).createSignedUrls(unique, 60 * 60);
+  const result = new Map<string, string>();
+  for (const item of data ?? []) {
+    if (item.path && item.signedUrl && !item.error) result.set(item.path, item.signedUrl);
+  }
+  return result;
+}
+
 /** 사진 보관함에서 1장 선택. 취소하면 null. */
 export async function pickPhoto(): Promise<string | null> {
   const result = await ImagePicker.launchImageLibraryAsync({
@@ -127,13 +142,7 @@ export async function fetchMyPhotos(userId: string): Promise<PhotoWithUrl[]> {
   const visible = photos.filter((photo) => photo.moderation_status !== 'rejected');
   if (visible.length === 0) return photos.map((photo) => ({ ...photo, url: null }));
 
-  const { data: signed } = await supabase.storage
-    .from(PROFILE_BUCKET)
-    .createSignedUrls(
-      visible.map((photo) => photo.storage_path),
-      60 * 60,
-    );
-  const urlByPath = new Map((signed ?? []).map((item) => [item.path, item.signedUrl]));
+  const urlByPath = await signPhotoPaths(visible.map((photo) => photo.storage_path));
   return photos.map((photo) => ({ ...photo, url: urlByPath.get(photo.storage_path) ?? null }));
 }
 

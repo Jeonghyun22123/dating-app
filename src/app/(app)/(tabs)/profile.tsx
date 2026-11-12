@@ -15,8 +15,8 @@ const VERIFICATION_LABEL = {
   rejected: '셀카 인증 반려 · 다시 시도해 주세요',
 } as const;
 
-/** Phase 2 확인용 임시 홈. Phase 3에서 추천 카드 화면으로 교체합니다. */
-export default function HomeScreen() {
+/** 내 프로필 탭. 다른 사람에게 보이는 모습 그대로 보여줍니다. (수정 기능은 이후 Phase) */
+export default function MyProfileScreen() {
   const { data: profile } = useMyProfile();
   const { data: photos } = useMyPhotos(profile?.id);
 
@@ -26,7 +26,7 @@ export default function HomeScreen() {
   const purpose = PURPOSES.find((item) => item.value === profile.purpose)?.label;
 
   return (
-    <Screen footer={<Button title="로그아웃" variant="secondary" onPress={signOut} />}>
+    <Screen title="내 프로필" footer={<Button title="로그아웃" variant="secondary" onPress={signOut} />}>
       <View className="overflow-hidden rounded-3xl bg-white">
         <View className="aspect-[4/5] w-full bg-neutral-200">
           {mainPhoto?.url ? (
@@ -54,7 +54,6 @@ export default function HomeScreen() {
           </View>
         </View>
       </View>
-      <Text className="text-center text-sm text-neutral-400">추천과 채팅은 다음 단계에서 열려요.</Text>
     </Screen>
   );
 }
