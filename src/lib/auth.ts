@@ -15,6 +15,18 @@ export function isValidEmail(email: string) {
 export function authErrorMessage(error: { message?: string; code?: string } | null | undefined): string {
   const code = error?.code ?? '';
   const message = error?.message ?? '';
+  // 개발 중에는 원인을 바로 볼 수 있게 원본 오류를 콘솔에 남깁니다.
+  if (__DEV__) console.warn('[auth]', code || '(no code)', message);
+
+  if (code === 'email_address_invalid' || /email address .* is invalid/i.test(message)) {
+    return '사용할 수 없는 이메일 주소입니다. 실제로 메일을 받을 수 있는 주소를 입력해 주세요.';
+  }
+  if (/invalid api key|no api key/i.test(message)) {
+    return '서버 연결 설정이 올바르지 않습니다. (.env.local 의 Supabase URL 과 anon 키를 확인하세요)';
+  }
+  if (code === 'signup_disabled' || code === 'email_provider_disabled') {
+    return '현재 이메일 가입이 꺼져 있습니다. (Supabase > Authentication > Providers > Email 확인)';
+  }
   if (code === 'invalid_credentials' || /invalid login credentials/i.test(message)) {
     return '이메일 또는 비밀번호가 올바르지 않습니다.';
   }
@@ -33,7 +45,8 @@ export function authErrorMessage(error: { message?: string; code?: string } | nu
   if (/network|fetch/i.test(message)) {
     return '네트워크 연결을 확인해 주세요.';
   }
-  return '문제가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+  // 알 수 없는 오류는 원인 파악을 위해 코드를 함께 보여줍니다.
+  return `문제가 발생했습니다. 잠시 후 다시 시도해 주세요.${code ? ` (${code})` : ''}`;
 }
 
 export async function signIn(email: string, password: string) {
