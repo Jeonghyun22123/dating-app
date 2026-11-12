@@ -2,6 +2,9 @@
 module.exports = {
   content: ['./src/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
+  // 웹 개발 서버에서 'Cannot manually set color scheme' 오류를 막기 위해 'class' 방식을 씁니다.
+  // (기본값 'media' 는 NativeWind 웹 런타임과 충돌). 다크 모드 디자인은 아직 없습니다.
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
