@@ -29,15 +29,15 @@ export default function AdminScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-50">
-      <View className="items-center border-b border-neutral-200 bg-white px-4 pt-4">
+    <SafeAreaView className="flex-1 bg-bg">
+      <View className="items-center border-b border-line bg-card px-4 pt-4">
         <View className="w-full max-w-3xl gap-3">
           <View className="flex-row items-center justify-between">
-            <Text className="text-2xl font-bold text-neutral-900">관리자</Text>
+            <Text className="text-2xl font-bold text-fg">관리자</Text>
             <Pressable
               accessibilityRole="button"
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
-              <Text className="text-sm font-semibold text-neutral-500">앱으로 돌아가기</Text>
+              <Text className="text-sm font-semibold text-muted">앱으로 돌아가기</Text>
             </Pressable>
           </View>
           <View accessibilityRole="tablist" className="flex-row gap-1">
@@ -50,7 +50,7 @@ export default function AdminScreen() {
                   accessibilityState={{ selected }}
                   onPress={() => setSection(tab.value)}
                   className={`flex-row items-center gap-1.5 border-b-2 px-3 py-2.5 ${selected ? 'border-brand-500' : 'border-transparent'}`}>
-                  <Text className={`text-sm font-semibold ${selected ? 'text-brand-600' : 'text-neutral-500'}`}>
+                  <Text className={`text-sm font-semibold ${selected ? 'text-brand-600' : 'text-muted'}`}>
                     {tab.label}
                   </Text>
                   {tab.count ? (

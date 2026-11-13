@@ -3,6 +3,7 @@ import { Text, TextInput, View } from 'react-native';
 
 import { formatDateTime, GENDER_LABEL, setBanned, useAdminUsers, type AdminUser } from './api';
 import { ActionButton, Badge, Card, ListState, useActionError } from './parts';
+import { useThemeColors } from '@/theme/theme-view';
 
 const VERIFICATION: Record<AdminUser['verification_status'], { label: string; tone: 'amber' | 'green' | 'red' }> = {
   pending: { label: '인증 전', tone: 'amber' },
@@ -18,7 +19,7 @@ function UserCard({ user }: { user: AdminUser }) {
   return (
     <Card>
       <View className="flex-row flex-wrap items-center gap-2">
-        <Text className="text-base font-semibold text-neutral-900">
+        <Text className="text-base font-semibold text-fg">
           {user.nickname} · {user.age}세 · {GENDER_LABEL[user.gender]}
         </Text>
         {user.role === 'admin' ? <Badge label="관리자" tone="neutral" /> : null}
@@ -28,8 +29,8 @@ function UserCard({ user }: { user: AdminUser }) {
           <Badge label={`신고 ${user.report_count}건`} tone={user.report_count >= 3 ? 'red' : 'neutral'} />
         ) : null}
       </View>
-      <Text className="text-sm text-neutral-600">{user.email}</Text>
-      <Text className="text-xs text-neutral-500">
+      <Text className="text-sm text-muted">{user.email}</Text>
+      <Text className="text-xs text-muted">
         {user.neighborhood_name ?? '동네 미설정'} · 가입 {formatDateTime(user.created_at)} · 최근 활동{' '}
         {formatDateTime(user.last_active_at)}
       </Text>
@@ -53,6 +54,7 @@ function UserCard({ user }: { user: AdminUser }) {
 }
 
 export function Users() {
+  const colors = useThemeColors();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const users = useAdminUsers(search);
@@ -68,9 +70,9 @@ export function Users() {
     <View className="gap-3">
       <TextInput
         accessibilityLabel="회원 검색"
-        className="h-12 rounded-2xl border border-neutral-300 bg-white px-4 text-base text-neutral-900"
+        className="h-12 rounded-2xl border border-line bg-card px-4 text-base text-fg"
         placeholder="닉네임 또는 이메일로 검색"
-        placeholderTextColor="#a3a3a3"
+        placeholderTextColor={colors.subtle}
         autoCapitalize="none"
         value={input}
         onChangeText={setInput}

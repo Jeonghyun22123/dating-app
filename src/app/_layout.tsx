@@ -12,6 +12,8 @@ import { signOut } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/env';
 import { AppProviders } from '@/providers/app-providers';
 import { useAuthStore } from '@/stores/auth-store';
+import { useThemeStore } from '@/stores/theme-store';
+import { ThemeView, useThemeColors } from '@/theme/theme-view';
 
 /**
  * 로그인/온보딩 상태에 따라 들어갈 수 있는 화면 묶음을 나눕니다.
@@ -25,18 +27,20 @@ import { useAuthStore } from '@/stores/auth-store';
 function RootNavigator() {
   const { session, isReady } = useAuthStore();
   const profile = useMyProfile();
+  const themeReady = useThemeStore((s) => s.hydrated);
 
   if (!isSupabaseConfigured) {
     return (
       <Screen
         title="Supabase 설정이 필요해요"
         subtitle=".env.example 을 .env.local 로 복사해 Supabase URL 과 anon 키를 채운 뒤 개발 서버를 다시 시작하세요.">
-        <Text className="text-sm text-neutral-500">배포 환경이라면 호스팅 서비스의 환경변수에 같은 값을 등록하세요.</Text>
+        <Text className="text-sm text-muted">배포 환경이라면 호스팅 서비스의 환경변수에 같은 값을 등록하세요.</Text>
       </Screen>
     );
   }
 
-  if (!isReady || (session && profile.isPending)) return <LoadingScreen />;
+  // 저장된 테마를 읽기 전에 그리면 잠깐 다른 색이 보이므로 기다립니다.
+  if (!themeReady || !isReady || (session && profile.isPending)) return <LoadingScreen />;
 
   if (session && profile.isError) {
     return (
@@ -80,14 +84,23 @@ function RootNavigator() {
   );
 }
 
+/** 어두운 테마에서는 상단 상태바(시계·배터리) 글자를 밝게 합니다. */
+function ThemedStatusBar() {
+  const colors = useThemeColors();
+  return <StatusBar style={colors.dark ? 'light' : 'dark'} />;
+}
+
 export default function RootLayout() {
   return (
     // 카드 밀기 같은 제스처가 동작하려면 앱 전체를 이 뷰로 감싸야 합니다.
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppProviders>
-        <StatusBar style="dark" />
-        <RootNavigator />
-      </AppProviders>
+      {/* 앱 전체에 현재 테마의 색을 적용합니다 */}
+      <ThemeView style={{ flex: 1 }}>
+        <AppProviders>
+          <ThemedStatusBar />
+          <RootNavigator />
+        </AppProviders>
+      </ThemeView>
     </GestureHandlerRootView>
   );
 }

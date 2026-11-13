@@ -4,6 +4,7 @@ import type { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useMatches } from '@/features/chat/api';
+import { useThemeColors } from '@/theme/theme-view';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -14,6 +15,7 @@ const icon =
   );
 
 export default function TabsLayout() {
+  const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const { data: matches } = useMatches();
   const unread = (matches ?? []).reduce((sum, match) => sum + match.unread_count, 0);
@@ -22,11 +24,17 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#e11d48',
-        tabBarInactiveTintColor: '#a3a3a3',
+        tabBarActiveTintColor: colors.brandText,
+        tabBarInactiveTintColor: colors.subtle,
         tabBarLabelStyle: { fontSize: 11, lineHeight: 16, fontWeight: '600' },
         // 아이콘과 글자가 잘리지 않도록 높이를 직접 지정합니다 (홈 인디케이터 영역 포함).
-        tabBarStyle: { height: 64 + insets.bottom, paddingBottom: insets.bottom },
+        tabBarStyle: {
+          height: 64 + insets.bottom,
+          paddingBottom: insets.bottom,
+          backgroundColor: colors.card,
+          borderTopColor: colors.line,
+        },
+        tabBarBadgeStyle: { backgroundColor: colors.brand, color: '#ffffff' },
       }}>
       <Tabs.Screen name="index" options={{ title: '둘러보기', tabBarIcon: icon('compass', 'compass-outline') }} />
       <Tabs.Screen

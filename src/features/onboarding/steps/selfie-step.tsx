@@ -96,7 +96,7 @@ export function SelfieStep({
           </View>
         )}
       </View>
-      <Text className="text-sm leading-5 text-neutral-500">
+      <Text className="text-sm leading-5 text-muted">
         밝은 곳에서 얼굴 전체가 보이도록, 혼자 정면을 보고 촬영해 주세요.
       </Text>
     </Screen>

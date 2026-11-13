@@ -38,7 +38,7 @@ export function DoneStep({ profile }: { profile: Profile }) {
           <Button title="시작하기" onPress={handleStart} loading={loading} />
         </>
       }>
-      <Text className="text-base leading-6 text-neutral-600">
+      <Text className="text-base leading-6 text-muted">
         이제 {profile.neighborhood_name} 근처의 사람들을 만나볼 수 있어요.
       </Text>
     </Screen>

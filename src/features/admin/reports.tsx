@@ -6,6 +6,7 @@ import { REPORT_REASONS } from '@/features/safety/api';
 
 import { formatDateTime, resolveReport, setBanned, useAdminReports, type AdminReport, type ReportStatus } from './api';
 import { ActionButton, Badge, Card, ListState, useActionError } from './parts';
+import { useThemeColors } from '@/theme/theme-view';
 
 const FILTERS: { value: ReportStatus | 'all'; label: string }[] = [
   { value: 'pending', label: '대기' },
@@ -25,20 +26,20 @@ const reasonLabel = (reason: string) => REPORT_REASONS.find((item) => item.value
 function Snapshot({ report }: { report: AdminReport }) {
   const messages = report.chat_snapshot ?? [];
   if (messages.length === 0) {
-    return <Text className="text-sm text-neutral-500">첨부된 대화가 없어요 (프로필에서 접수된 신고).</Text>;
+    return <Text className="text-sm text-muted">첨부된 대화가 없어요 (프로필에서 접수된 신고).</Text>;
   }
   return (
-    <View className="gap-2 rounded-xl bg-neutral-50 p-3">
+    <View className="gap-2 rounded-xl bg-bg p-3">
       {messages.map((message) => {
         const fromReported = message.sender_id === report.reported_user_id;
         return (
           <View key={message.id} className="gap-0.5">
-            <Text className={`text-xs font-semibold ${fromReported ? 'text-red-600' : 'text-neutral-500'}`}>
+            <Text className={`text-xs font-semibold ${fromReported ? 'text-red-600' : 'text-muted'}`}>
               {fromReported ? `${report.reported_nickname} (피신고자)` : `${report.reporter_nickname ?? '탈퇴한 사용자'} (신고자)`}
               {' · '}
               {formatDateTime(message.created_at)}
             </Text>
-            <Text className="text-sm leading-5 text-neutral-900">{message.content}</Text>
+            <Text className="text-sm leading-5 text-fg">{message.content}</Text>
           </View>
         );
       })}
@@ -47,6 +48,7 @@ function Snapshot({ report }: { report: AdminReport }) {
 }
 
 function ReportCard({ report }: { report: AdminReport }) {
+  const colors = useThemeColors();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState(report.admin_note ?? '');
   const { error, run } = useActionError();
@@ -58,19 +60,19 @@ function ReportCard({ report }: { report: AdminReport }) {
     <Card>
       <View className="flex-row flex-wrap items-center gap-2">
         <Badge label={badge.label} tone={badge.tone} />
-        <Text className="text-base font-semibold text-neutral-900">{reasonLabel(report.reason)}</Text>
-        <Text className="text-xs text-neutral-500">{formatDateTime(report.created_at)}</Text>
+        <Text className="text-base font-semibold text-fg">{reasonLabel(report.reason)}</Text>
+        <Text className="text-xs text-muted">{formatDateTime(report.created_at)}</Text>
       </View>
 
       <View className="flex-row flex-wrap items-center gap-2">
-        <Text className="text-sm text-neutral-700">
+        <Text className="text-sm text-muted">
           {report.reporter_nickname ?? '탈퇴한 사용자'} → <Text className="font-semibold">{report.reported_nickname}</Text>
         </Text>
         <Badge label={`누적 신고 ${report.reported_report_count}건`} tone={report.reported_report_count >= 3 ? 'red' : 'neutral'} />
         {report.reported_is_banned ? <Badge label="정지됨" tone="red" /> : null}
       </View>
 
-      {report.description ? <Text className="text-sm leading-5 text-neutral-800">“{report.description}”</Text> : null}
+      {report.description ? <Text className="text-sm leading-5 text-fg">“{report.description}”</Text> : null}
 
       <Pressable accessibilityRole="button" onPress={() => setOpen(!open)}>
         <Text className="text-sm font-semibold text-brand-600">
@@ -81,9 +83,9 @@ function ReportCard({ report }: { report: AdminReport }) {
 
       <TextInput
         accessibilityLabel="처리 메모"
-        className="min-h-10 rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900"
+        className="min-h-10 rounded-xl border border-line bg-card px-3 py-2 text-sm text-fg"
         placeholder="처리 메모 (선택)"
-        placeholderTextColor="#a3a3a3"
+        placeholderTextColor={colors.subtle}
         value={note}
         onChangeText={setNote}
         maxLength={500}

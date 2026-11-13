@@ -5,9 +5,9 @@ import { ListState } from './parts';
 
 function Stat({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
   return (
-    <View className="min-w-[30%] flex-1 rounded-2xl border border-neutral-200 bg-white p-4">
-      <Text className="text-sm text-neutral-500">{label}</Text>
-      <Text className={`mt-1 text-2xl font-bold ${highlight && value > 0 ? 'text-brand-600' : 'text-neutral-900'}`}>
+    <View className="min-w-[30%] flex-1 rounded-2xl border border-line bg-card p-4">
+      <Text className="text-sm text-muted">{label}</Text>
+      <Text className={`mt-1 text-2xl font-bold ${highlight && value > 0 ? 'text-brand-600' : 'text-fg'}`}>
         {value.toLocaleString('ko-KR')}
       </Text>
     </View>
@@ -17,7 +17,7 @@ function Stat({ label, value, highlight }: { label: string; value: number; highl
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View className="gap-2">
-      <Text className="text-sm font-semibold text-neutral-700">{title}</Text>
+      <Text className="text-sm font-semibold text-muted">{title}</Text>
       <View className="flex-row flex-wrap gap-2">{children}</View>
     </View>
   );

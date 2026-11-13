@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text } from 'react-native';
+import { useThemeColors } from '@/theme/theme-view';
 
 type Props = {
   title: string;
@@ -10,16 +11,17 @@ type Props = {
 
 const container = {
   primary: 'bg-brand-500 active:bg-brand-600',
-  secondary: 'border border-neutral-300 bg-white active:bg-neutral-100',
-  ghost: 'active:bg-neutral-100',
+  secondary: 'border border-line bg-card active:bg-field',
+  ghost: 'active:bg-field',
 };
 const label = {
   primary: 'text-white',
-  secondary: 'text-neutral-900',
-  ghost: 'text-neutral-500',
+  secondary: 'text-fg',
+  ghost: 'text-muted',
 };
 
 export function Button({ title, onPress, variant = 'primary', loading, disabled }: Props) {
+  const colors = useThemeColors();
   const inactive = disabled || loading;
   return (
     <Pressable
@@ -29,7 +31,7 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled 
       onPress={onPress}
       className={`h-14 flex-row items-center justify-center rounded-2xl px-5 ${container[variant]} ${inactive ? 'opacity-50' : ''}`}>
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#ffffff' : '#525252'} />
+        <ActivityIndicator color={variant === 'primary' ? '#ffffff' : colors.muted} />
       ) : (
         <Text className={`text-base font-semibold ${label[variant]}`}>{title}</Text>
       )}

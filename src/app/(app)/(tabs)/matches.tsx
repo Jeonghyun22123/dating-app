@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { formatTime, useMatches, type MatchSummary } from '@/features/chat/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { useThemeColors } from '@/theme/theme-view';
 
 function MatchRow({ match, myId, onPress }: { match: MatchSummary; myId?: string; onPress: () => void }) {
   const preview = !match.is_active
@@ -21,17 +22,17 @@ function MatchRow({ match, myId, onPress }: { match: MatchSummary; myId?: string
       accessibilityRole="button"
       accessibilityLabel={`${match.nickname}님과의 대화`}
       onPress={onPress}
-      className="flex-row items-center gap-3 rounded-2xl bg-white p-3 active:bg-neutral-100">
+      className="flex-row items-center gap-3 rounded-2xl bg-card p-3 active:bg-field">
       <Avatar url={match.photoUrl} name={match.nickname} />
       <View className="flex-1 gap-1">
         <View className="flex-row items-center justify-between gap-2">
-          <Text className="text-base font-semibold text-neutral-900">{match.nickname}</Text>
-          <Text className="text-xs text-neutral-400">{formatTime(match.last_message_at ?? match.matched_at)}</Text>
+          <Text className="text-base font-semibold text-fg">{match.nickname}</Text>
+          <Text className="text-xs text-subtle">{formatTime(match.last_message_at ?? match.matched_at)}</Text>
         </View>
         <View className="flex-row items-center justify-between gap-2">
           <Text
             numberOfLines={1}
-            className={`flex-1 text-sm ${unread ? 'font-semibold text-neutral-900' : 'text-neutral-500'}`}>
+            className={`flex-1 text-sm ${unread ? 'font-semibold text-fg' : 'text-muted'}`}>
             {preview}
           </Text>
           {unread ? (
@@ -46,6 +47,7 @@ function MatchRow({ match, myId, onPress }: { match: MatchSummary; myId?: string
 }
 
 export default function MatchesScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
   const myId = useAuthStore((s) => s.session?.user.id);
   const matches = useMatches();
@@ -62,17 +64,17 @@ export default function MatchesScreen() {
     <Screen title="채팅">
       {matches.isPending ? (
         <View className="items-center py-24">
-          <ActivityIndicator size="large" color="#f43f5e" />
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : matches.isError ? (
         <View className="gap-4 py-16">
-          <Text className="text-center text-base text-neutral-600">채팅 목록을 불러오지 못했어요.</Text>
+          <Text className="text-center text-base text-muted">채팅 목록을 불러오지 못했어요.</Text>
           <Button title="다시 시도" variant="secondary" onPress={() => matches.refetch()} />
         </View>
       ) : matches.data.length === 0 ? (
         <View className="gap-2 py-16">
-          <Text className="text-center text-xl font-bold text-neutral-900">아직 연결된 사람이 없어요</Text>
-          <Text className="text-center text-base leading-6 text-neutral-600">
+          <Text className="text-center text-xl font-bold text-fg">아직 연결된 사람이 없어요</Text>
+          <Text className="text-center text-base leading-6 text-muted">
             둘러보기에서 관심을 표현하면, 서로 통했을 때 여기에서 대화할 수 있어요.
           </Text>
         </View>
