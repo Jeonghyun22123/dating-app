@@ -3,6 +3,7 @@ import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Text } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Button } from '@/components/ui/button';
 import { LoadingScreen, Screen } from '@/components/ui/screen';
@@ -81,9 +82,12 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AppProviders>
-      <StatusBar style="dark" />
-      <RootNavigator />
-    </AppProviders>
+    // 카드 밀기 같은 제스처가 동작하려면 앱 전체를 이 뷰로 감싸야 합니다.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppProviders>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </AppProviders>
+    </GestureHandlerRootView>
   );
 }

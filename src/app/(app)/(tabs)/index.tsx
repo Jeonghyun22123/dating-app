@@ -14,6 +14,7 @@ import {
   type DiscoverProfile,
   type DistanceKm,
 } from '@/features/discover/api';
+import { SlideCard } from '@/features/discover/slide-card';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
 import { SafetySheet } from '@/features/safety/safety-sheet';
@@ -123,8 +124,9 @@ export default function DiscoverScreen() {
 
   const current = discover.data?.[0];
 
-  async function handleSwipe(action: 'like' | 'pass') {
-    if (!current || busy) return;
+  /** 반환값: 처리 성공 여부 (실패하면 밀어낸 카드가 제자리로 돌아옵니다) */
+  async function handleSwipe(action: 'like' | 'pass'): Promise<boolean> {
+    if (!current || busy) return false;
     setError(null);
     setBusy(true);
     try {
@@ -135,8 +137,10 @@ export default function DiscoverScreen() {
         track(AnalyticsEvent.MatchCreated);
         setMatched({ matchId, nickname: current.nickname });
       }
+      return true;
     } catch {
       setError('처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -176,13 +180,15 @@ export default function DiscoverScreen() {
           <Button title="다시 시도" variant="secondary" onPress={() => discover.refetch()} />
         </View>
       ) : current ? (
-        // key 를 주어 카드가 바뀔 때 사진 위치 등 내부 상태를 초기화합니다.
-        <ProfileCard
-          key={current.id}
-          profile={current}
-          myHobbies={me?.hobbies ?? []}
-          onOpenSafety={() => setSafetyOpen(true)}
-        />
+        // key 를 주어 카드가 바뀔 때 밀린 위치·사진 순서 등 내부 상태를 초기화합니다.
+        <View key={current.id} className="gap-3">
+          <SlideCard disabled={busy} onDecide={handleSwipe}>
+            <ProfileCard profile={current} myHobbies={me?.hobbies ?? []} onOpenSafety={() => setSafetyOpen(true)} />
+          </SlideCard>
+          <Text className="text-center text-sm text-neutral-400">
+            카드를 오른쪽으로 밀면 관심 있어요, 왼쪽으로 밀면 다음에
+          </Text>
+        </View>
       ) : (
         <View className="gap-4 py-16">
           <Text className="text-center text-xl font-bold text-neutral-900">근처의 새로운 사람을 모두 봤어요</Text>
