@@ -9,8 +9,8 @@ export function Chip({ label, selected, onPress, disabled }: Props) {
       accessibilityState={{ checked: selected, disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}
-      className={`rounded-full border px-4 py-2 ${selected ? 'border-brand-500 bg-brand-500' : 'border-neutral-300 bg-white'} ${disabled ? 'opacity-40' : ''}`}>
-      <Text className={`text-sm ${selected ? 'font-semibold text-white' : 'text-neutral-700'}`}>{label}</Text>
+      className={`rounded-full border px-4 py-2 ${selected ? 'border-brand-500 bg-brand-500' : 'border-line bg-card'} ${disabled ? 'opacity-40' : ''}`}>
+      <Text className={`text-sm ${selected ? 'font-semibold text-white' : 'text-muted'}`}>{label}</Text>
     </Pressable>
   );
 }

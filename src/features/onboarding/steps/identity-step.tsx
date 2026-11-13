@@ -8,6 +8,7 @@ import { selfDeclaredIdentity } from '@/features/identity/identity-provider';
 import { signOut } from '@/lib/auth';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import type { Gender } from '@/types/db';
+import { useThemeColors } from '@/theme/theme-view';
 
 const GENDERS: { value: Gender; label: string }[] = [
   { value: 'female', label: '여성' },
@@ -15,7 +16,7 @@ const GENDERS: { value: Gender; label: string }[] = [
 ];
 
 const dateInput =
-  'h-14 rounded-2xl border border-neutral-300 bg-white px-4 text-center text-base text-neutral-900 focus:border-brand-500';
+  'h-14 rounded-2xl border border-line bg-card px-4 text-center text-base text-fg focus:border-brand-500';
 
 /**
  * 성별·생년월일 입력 (자기 신고).
@@ -23,6 +24,7 @@ const dateInput =
  * 결과를 같은 setIdentity 로 넘기면 이후 단계는 그대로 동작합니다.
  */
 export function IdentityStep({ progress }: { progress: string }) {
+  const colors = useThemeColors();
   const setIdentity = useOnboardingStore((s) => s.setIdentity);
   const [gender, setGender] = useState<Gender | null>(null);
   const [year, setYear] = useState('');
@@ -53,7 +55,7 @@ export function IdentityStep({ progress }: { progress: string }) {
         </>
       }>
       <View className="gap-2">
-        <Text className="text-sm font-medium text-neutral-700">성별</Text>
+        <Text className="text-sm font-medium text-muted">성별</Text>
         <View className="flex-row gap-3">
           {GENDERS.map((item) => {
             const selected = gender === item.value;
@@ -63,8 +65,8 @@ export function IdentityStep({ progress }: { progress: string }) {
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
                 onPress={() => setGender(item.value)}
-                className={`h-14 flex-1 items-center justify-center rounded-2xl border ${selected ? 'border-brand-500 bg-brand-50' : 'border-neutral-300 bg-white'}`}>
-                <Text className={`text-base ${selected ? 'font-semibold text-brand-600' : 'text-neutral-700'}`}>
+                className={`h-14 flex-1 items-center justify-center rounded-2xl border ${selected ? 'border-brand-500 bg-brand-50' : 'border-line bg-card'}`}>
+                <Text className={`text-base ${selected ? 'font-semibold text-brand-600' : 'text-muted'}`}>
                   {item.label}
                 </Text>
               </Pressable>
@@ -74,13 +76,13 @@ export function IdentityStep({ progress }: { progress: string }) {
       </View>
 
       <View className="gap-2">
-        <Text className="text-sm font-medium text-neutral-700">생년월일</Text>
+        <Text className="text-sm font-medium text-muted">생년월일</Text>
         <View className="flex-row gap-3">
           <TextInput
             accessibilityLabel="태어난 연도"
             className={`${dateInput} flex-[1.4]`}
             placeholder="YYYY"
-            placeholderTextColor="#a3a3a3"
+            placeholderTextColor={colors.subtle}
             inputMode="numeric"
             maxLength={4}
             value={year}
@@ -95,7 +97,7 @@ export function IdentityStep({ progress }: { progress: string }) {
             accessibilityLabel="태어난 월"
             className={`${dateInput} flex-1`}
             placeholder="MM"
-            placeholderTextColor="#a3a3a3"
+            placeholderTextColor={colors.subtle}
             inputMode="numeric"
             maxLength={2}
             value={month}
@@ -110,7 +112,7 @@ export function IdentityStep({ progress }: { progress: string }) {
             accessibilityLabel="태어난 일"
             className={`${dateInput} flex-1`}
             placeholder="DD"
-            placeholderTextColor="#a3a3a3"
+            placeholderTextColor={colors.subtle}
             inputMode="numeric"
             maxLength={2}
             value={day}

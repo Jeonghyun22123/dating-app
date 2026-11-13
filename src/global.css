@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 테마 색의 기본값 (화이트). 실제 값은 src/theme/themes.ts 의 테마가 덮어씁니다. */
+:root {
+  --c-bg: 250 250 250;
+  --c-card: 255 255 255;
+  --c-field: 240 240 240;
+  --c-line: 214 214 214;
+  --c-fg: 23 23 23;
+  --c-muted: 95 95 95;
+  --c-subtle: 163 163 163;
+  --c-brand-50: 255 241 243;
+  --c-brand-100: 255 224 229;
+  --c-brand-300: 255 154 169;
+  --c-brand-500: 244 63 94;
+  --c-brand-600: 225 29 72;
+  --c-brand-700: 190 18 60;
+}
+
 /* 웹: 사진을 잡고 끌 때 브라우저의 기본 "이미지 끌어다 놓기"가 뜨지 않게 합니다. */
 img {
   -webkit-user-drag: none;

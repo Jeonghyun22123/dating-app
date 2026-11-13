@@ -3,6 +3,7 @@ import { Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
+import { ThemeView } from '@/theme/theme-view';
 
 import { blockUser, REPORT_REASONS, reportUser, type ReportReason } from './api';
 
@@ -72,18 +73,20 @@ export function SafetySheet({ visible, onClose, myId, target, matchId, onUnmatch
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
+      {/* Modal 은 별도 창에 그려지므로 테마 색을 다시 적용합니다 */}
+      <ThemeView style={{ flex: 1 }}>
       <Pressable accessibilityLabel="닫기" className="flex-1 bg-black/50" onPress={close} />
-      <View className="items-center bg-white px-6 pb-8 pt-6">
+      <View className="items-center bg-card px-6 pb-8 pt-6">
         <View className="w-full max-w-md gap-3">
           {mode === 'menu' ? (
             <>
-              <Text className="text-lg font-bold text-neutral-900">{target.nickname}님</Text>
+              <Text className="text-lg font-bold text-fg">{target.nickname}님</Text>
               <Button title="신고하기" variant="secondary" onPress={() => setMode('report')} disabled={busy} />
               <Button title="차단하기" variant="secondary" onPress={handleBlock} loading={busy} />
               {onUnmatch ? (
                 <Button title="매칭 해제" variant="secondary" onPress={handleUnmatch} disabled={busy} />
               ) : null}
-              <Text className="text-sm leading-5 text-neutral-500">
+              <Text className="text-sm leading-5 text-muted">
                 차단하면 서로의 추천과 채팅 목록에서 사라지고, 상대에게는 알림이 가지 않아요.
               </Text>
             </>
@@ -91,7 +94,7 @@ export function SafetySheet({ visible, onClose, myId, target, matchId, onUnmatch
 
           {mode === 'report' ? (
             <>
-              <Text className="text-lg font-bold text-neutral-900">신고 사유를 선택해 주세요</Text>
+              <Text className="text-lg font-bold text-fg">신고 사유를 선택해 주세요</Text>
               {REPORT_REASONS.map((item) => {
                 const selected = reason === item.value;
                 return (
@@ -100,8 +103,8 @@ export function SafetySheet({ visible, onClose, myId, target, matchId, onUnmatch
                     accessibilityRole="radio"
                     accessibilityState={{ checked: selected }}
                     onPress={() => setReason(item.value)}
-                    className={`rounded-2xl border px-4 py-3 ${selected ? 'border-brand-500 bg-brand-50' : 'border-neutral-300 bg-white'}`}>
-                    <Text className={`text-base ${selected ? 'font-semibold text-brand-600' : 'text-neutral-800'}`}>
+                    className={`rounded-2xl border px-4 py-3 ${selected ? 'border-brand-500 bg-brand-50' : 'border-line bg-card'}`}>
+                    <Text className={`text-base ${selected ? 'font-semibold text-brand-600' : 'text-fg'}`}>
                       {item.label}
                     </Text>
                   </Pressable>
@@ -114,7 +117,7 @@ export function SafetySheet({ visible, onClose, myId, target, matchId, onUnmatch
                 maxLength={1000}
               />
               {matchId ? (
-                <Text className="text-sm leading-5 text-neutral-500">
+                <Text className="text-sm leading-5 text-muted">
                   신고하면 이 대화의 최근 메시지가 증거로 운영팀에 전달됩니다.
                 </Text>
               ) : null}
@@ -124,8 +127,8 @@ export function SafetySheet({ visible, onClose, myId, target, matchId, onUnmatch
 
           {mode === 'reported' ? (
             <>
-              <Text className="text-lg font-bold text-neutral-900">신고가 접수되었어요</Text>
-              <Text className="text-base leading-6 text-neutral-600">
+              <Text className="text-lg font-bold text-fg">신고가 접수되었어요</Text>
+              <Text className="text-base leading-6 text-muted">
                 운영팀이 확인 후 조치할게요. 이 사용자를 더 보고 싶지 않다면 차단할 수 있어요.
               </Text>
               <Button title="차단하기" onPress={handleBlock} loading={busy} />
@@ -136,6 +139,7 @@ export function SafetySheet({ visible, onClose, myId, target, matchId, onUnmatch
           <Button title="닫기" variant="ghost" onPress={close} disabled={busy} />
         </View>
       </View>
+      </ThemeView>
     </Modal>
   );
 }

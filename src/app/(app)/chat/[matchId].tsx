@@ -19,14 +19,15 @@ import {
 import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { useAuthStore } from '@/stores/auth-store';
+import { useThemeColors } from '@/theme/theme-view';
 
 function Bubble({ message, mine }: { message: Message; mine: boolean }) {
   return (
     <View className={`mb-2 max-w-[80%] ${mine ? 'self-end items-end' : 'self-start items-start'}`}>
-      <View className={`rounded-2xl px-4 py-2.5 ${mine ? 'bg-brand-500' : 'bg-white'}`}>
-        <Text className={`text-base leading-6 ${mine ? 'text-white' : 'text-neutral-900'}`}>{message.content}</Text>
+      <View className={`rounded-2xl px-4 py-2.5 ${mine ? 'bg-brand-500' : 'bg-card'}`}>
+        <Text className={`text-base leading-6 ${mine ? 'text-white' : 'text-fg'}`}>{message.content}</Text>
       </View>
-      <Text className="mt-1 text-xs text-neutral-400">
+      <Text className="mt-1 text-xs text-subtle">
         {mine && message.is_read ? '읽음 · ' : ''}
         {formatTime(message.created_at)}
       </Text>
@@ -35,6 +36,7 @@ function Bubble({ message, mine }: { message: Message; mine: boolean }) {
 }
 
 export default function ChatScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
   const { matchId } = useLocalSearchParams<{ matchId: string }>();
   const myId = useAuthStore((s) => s.session?.user.id);
@@ -75,8 +77,8 @@ export default function ChatScreen() {
   // 목록에 없는 매칭(차단됨, 남의 대화, 잘못된 주소)은 열 수 없습니다.
   if (!matchesPending && !match) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-neutral-50 px-6">
-        <Text className="text-center text-base text-neutral-600">대화를 찾을 수 없어요.</Text>
+      <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-bg px-6">
+        <Text className="text-center text-base text-muted">대화를 찾을 수 없어요.</Text>
         <Pressable accessibilityRole="button" onPress={goBack}>
           <Text className="text-base font-semibold text-brand-600">채팅 목록으로</Text>
         </Pressable>
@@ -87,26 +89,26 @@ export default function ChatScreen() {
   const active = match?.is_active ?? true;
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-50">
+    <SafeAreaView className="flex-1 bg-bg">
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View className="flex-row items-center gap-3 border-b border-neutral-200 bg-white px-4 py-3">
+        <View className="flex-row items-center gap-3 border-b border-line bg-card px-4 py-3">
           <Pressable accessibilityRole="button" accessibilityLabel="뒤로" hitSlop={8} onPress={goBack}>
-            <Ionicons name="chevron-back" size={26} color="#171717" />
+            <Ionicons name="chevron-back" size={26} color={colors.fg} />
           </Pressable>
           {match ? <Avatar url={match.photoUrl} name={match.nickname} size={36} /> : null}
-          <Text className="flex-1 text-lg font-semibold text-neutral-900">{match?.nickname ?? ''}</Text>
+          <Text className="flex-1 text-lg font-semibold text-fg">{match?.nickname ?? ''}</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="신고, 차단, 매칭 해제"
             hitSlop={8}
             onPress={() => setSafetyOpen(true)}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="#525252" />
+            <Ionicons name="ellipsis-horizontal" size={24} color={colors.muted} />
           </Pressable>
         </View>
 
         {messages.isPending ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#f43f5e" />
+            <ActivityIndicator color={colors.brand} />
           </View>
         ) : (
           <FlatList
@@ -119,7 +121,7 @@ export default function ChatScreen() {
             ListEmptyComponent={
               // 뒤집힌 목록 안에서는 내용도 뒤집히므로 다시 돌려 놓습니다.
               <View className="items-center py-16" style={{ transform: [{ scaleY: -1 }] }}>
-                <Text className="text-base text-neutral-500">첫 메시지를 보내 대화를 시작해 보세요.</Text>
+                <Text className="text-base text-muted">첫 메시지를 보내 대화를 시작해 보세요.</Text>
               </View>
             }
           />
@@ -128,12 +130,12 @@ export default function ChatScreen() {
         {error ? <Text className="px-4 pb-1 text-sm text-red-600">{error}</Text> : null}
 
         {active ? (
-          <View className="flex-row items-end gap-2 border-t border-neutral-200 bg-white px-4 py-3">
+          <View className="flex-row items-end gap-2 border-t border-line bg-card px-4 py-3">
             <TextInput
               accessibilityLabel="메시지 입력"
-              className="max-h-32 min-h-12 flex-1 rounded-2xl bg-neutral-100 px-4 py-3 text-base text-neutral-900"
+              className="max-h-32 min-h-12 flex-1 rounded-2xl bg-field px-4 py-3 text-base text-fg"
               placeholder="메시지 보내기"
-              placeholderTextColor="#a3a3a3"
+              placeholderTextColor={colors.subtle}
               value={draft}
               onChangeText={setDraft}
               maxLength={MESSAGE_MAX}
@@ -158,8 +160,8 @@ export default function ChatScreen() {
             </Pressable>
           </View>
         ) : (
-          <View className="border-t border-neutral-200 bg-white px-4 py-4">
-            <Text className="text-center text-sm text-neutral-500">대화가 종료되어 메시지를 보낼 수 없어요.</Text>
+          <View className="border-t border-line bg-card px-4 py-4">
+            <Text className="text-center text-sm text-muted">대화가 종료되어 메시지를 보낼 수 없어요.</Text>
           </View>
         )}
       </KeyboardAvoidingView>

@@ -13,6 +13,7 @@ export default function AppLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="chat/[matchId]" />
       <Stack.Screen name="selfie" />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }

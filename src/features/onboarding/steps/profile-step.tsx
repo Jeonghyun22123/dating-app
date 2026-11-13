@@ -74,7 +74,7 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
       />
 
       <View className="gap-2">
-        <Text className="text-sm font-medium text-neutral-700">만남 목적</Text>
+        <Text className="text-sm font-medium text-muted">만남 목적</Text>
         {PURPOSES.map((item) => {
           const selected = purpose === item.value;
           return (
@@ -83,18 +83,18 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
               accessibilityRole="radio"
               accessibilityState={{ checked: selected }}
               onPress={() => setPurpose(item.value)}
-              className={`rounded-2xl border px-4 py-3 ${selected ? 'border-brand-500 bg-brand-50' : 'border-neutral-300 bg-white'}`}>
-              <Text className={`text-base font-semibold ${selected ? 'text-brand-600' : 'text-neutral-900'}`}>
+              className={`rounded-2xl border px-4 py-3 ${selected ? 'border-brand-500 bg-brand-50' : 'border-line bg-card'}`}>
+              <Text className={`text-base font-semibold ${selected ? 'text-brand-600' : 'text-fg'}`}>
                 {item.label}
               </Text>
-              <Text className="text-sm text-neutral-500">{item.description}</Text>
+              <Text className="text-sm text-muted">{item.description}</Text>
             </Pressable>
           );
         })}
       </View>
 
       <View className="gap-2">
-        <Text className="text-sm font-medium text-neutral-700">
+        <Text className="text-sm font-medium text-muted">
           취미 ({hobbies.length}/{LIMITS.hobbiesMax})
         </Text>
         <View className="flex-row flex-wrap gap-2">

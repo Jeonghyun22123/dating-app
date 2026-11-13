@@ -30,6 +30,7 @@ import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
 import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
+import { ThemeView, useThemeColors } from '@/theme/theme-view';
 
 const MAX_HOBBIES = 5;
 /** 뒤 카드가 맨 위로 올라온 뒤 완전히 선명해지기까지 걸리는 시간 (ms) */
@@ -71,14 +72,14 @@ function DistanceChips({
             : 'bg-brand-500'
           : onPhoto
             ? 'bg-black/35'
-            : 'border border-neutral-300 bg-white';
+            : 'border border-line bg-card';
         const label = selected
           ? onPhoto
             ? 'font-semibold text-neutral-900'
             : 'font-semibold text-white'
           : onPhoto
             ? 'text-white'
-            : 'text-neutral-700';
+            : 'text-muted';
         return (
           <Pressable
             key={km}
@@ -247,7 +248,7 @@ function ProfileCard({
               {photos.map((url, i) => (
                 <View
                   key={url}
-                  className={`h-1 flex-1 rounded-full ${i === index ? 'bg-white' : 'bg-white/40'}`}
+                  className={`h-1 flex-1 rounded-full ${i === index ? 'bg-card' : 'bg-white/40'}`}
                 />
               ))}
             </View>
@@ -356,6 +357,7 @@ function ProfileCard({
 type Handled = Record<string, 'pending' | number>;
 
 export default function DiscoverScreen() {
+  const colors = useThemeColors();
   const router = useRouter();
   const { data: me } = useMyProfile();
   const [maxKm, setMaxKm] = useState<DistanceKm>(30);
@@ -422,7 +424,7 @@ export default function DiscoverScreen() {
 
   return (
     // 위쪽 안전 영역만 띄웁니다. 아래는 탭 바가 차지합니다.
-    <SafeAreaView edges={['top']} className="flex-1 items-center bg-neutral-50">
+    <SafeAreaView edges={['top']} className="flex-1 items-center bg-bg">
       <View className="w-full max-w-md flex-1 px-2 pb-2 pt-1">
         {current ? (
           // 카드 두 장(맨 위 + 바로 다음)을 겹쳐 그립니다. key 가 프로필 id 라서, 맨 위 카드가 빠지면
@@ -456,20 +458,20 @@ export default function DiscoverScreen() {
         ) : (
           <View className="flex-1 items-center justify-center gap-5 px-6">
             {discover.isPending ? (
-              <ActivityIndicator size="large" color="#f43f5e" />
+              <ActivityIndicator size="large" color={colors.brand} />
             ) : discover.isError ? (
               <>
-                <Text className="text-center text-base text-neutral-600">추천을 불러오지 못했어요.</Text>
+                <Text className="text-center text-base text-muted">추천을 불러오지 못했어요.</Text>
                 <View className="w-full">
                   <Button title="다시 시도" variant="secondary" onPress={() => discover.refetch()} />
                 </View>
               </>
             ) : (
               <>
-                <Text className="text-center text-xl font-bold text-neutral-900">
+                <Text className="text-center text-xl font-bold text-fg">
                   근처의 새로운 사람을 모두 봤어요
                 </Text>
-                <Text className="text-center text-base leading-6 text-neutral-600">
+                <Text className="text-center text-base leading-6 text-muted">
                   거리 범위를 넓히거나 잠시 후 다시 확인해 보세요.
                 </Text>
                 <DistanceChips value={maxKm} onChange={setMaxKm} />
@@ -506,10 +508,10 @@ export default function DiscoverScreen() {
       ) : null}
 
       <Modal visible={!!matched} transparent animationType="fade" onRequestClose={() => setMatched(null)}>
-        <View className="flex-1 items-center justify-center bg-black/60 px-6">
-          <View className="w-full max-w-sm gap-4 rounded-3xl bg-white p-6">
+        <ThemeView className="flex-1 items-center justify-center bg-black/60 px-6">
+          <View className="w-full max-w-sm gap-4 rounded-3xl bg-card p-6">
             <Text className="text-center text-2xl font-bold text-brand-600">서로 관심을 보였어요</Text>
-            <Text className="text-center text-base leading-6 text-neutral-600">
+            <Text className="text-center text-base leading-6 text-muted">
               {matched?.nickname}님과 연결되었어요. 먼저 인사를 건네보세요.
             </Text>
             <Button
@@ -522,7 +524,7 @@ export default function DiscoverScreen() {
             />
             <Button title="계속 둘러보기" variant="ghost" onPress={() => setMatched(null)} />
           </View>
-        </View>
+        </ThemeView>
       </Modal>
     </SafeAreaView>
   );

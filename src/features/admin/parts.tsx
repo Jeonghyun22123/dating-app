@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useThemeColors } from '@/theme/theme-view';
 
 /** 목록 공통 상태 표시: 불러오는 중 / 오류 / 비어 있음 */
 export function ListState({
@@ -15,17 +16,18 @@ export function ListState({
   emptyText: string;
   onRetry: () => void;
 }) {
+  const colors = useThemeColors();
   if (loading) {
     return (
       <View className="items-center py-16">
-        <ActivityIndicator size="large" color="#f43f5e" />
+        <ActivityIndicator size="large" color={colors.brand} />
       </View>
     );
   }
   if (error) {
     return (
       <View className="items-center gap-3 py-16">
-        <Text className="text-base text-neutral-600">불러오지 못했어요.</Text>
+        <Text className="text-base text-muted">불러오지 못했어요.</Text>
         <Pressable accessibilityRole="button" onPress={onRetry}>
           <Text className="text-base font-semibold text-brand-600">다시 시도</Text>
         </Pressable>
@@ -35,7 +37,7 @@ export function ListState({
   if (empty) {
     return (
       <View className="items-center py-16">
-        <Text className="text-base text-neutral-500">{emptyText}</Text>
+        <Text className="text-base text-muted">{emptyText}</Text>
       </View>
     );
   }
@@ -43,12 +45,12 @@ export function ListState({
 }
 
 export function Card({ children }: { children: ReactNode }) {
-  return <View className="gap-3 rounded-2xl border border-neutral-200 bg-white p-4">{children}</View>;
+  return <View className="gap-3 rounded-2xl border border-line bg-card p-4">{children}</View>;
 }
 
 export function Badge({ label, tone }: { label: string; tone: 'neutral' | 'green' | 'red' | 'amber' }) {
   const styles = {
-    neutral: ['bg-neutral-100', 'text-neutral-600'],
+    neutral: ['bg-field', 'text-muted'],
     green: ['bg-emerald-50', 'text-emerald-700'],
     red: ['bg-red-50', 'text-red-700'],
     amber: ['bg-amber-50', 'text-amber-700'],
@@ -71,6 +73,7 @@ type ActionProps = {
 
 /** 관리자 화면용 작은 버튼. 실행 중 표시와 두 번 눌러 확인을 지원합니다. */
 export function ActionButton({ title, onPress, tone = 'plain', confirm, disabled }: ActionProps) {
+  const colors = useThemeColors();
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -94,13 +97,13 @@ export function ActionButton({ title, onPress, tone = 'plain', confirm, disabled
 
   const container = {
     primary: 'bg-brand-500',
-    danger: armed ? 'bg-red-600' : 'border border-red-300 bg-white',
-    plain: 'border border-neutral-300 bg-white',
+    danger: armed ? 'bg-red-600' : 'border border-red-300 bg-card',
+    plain: 'border border-line bg-card',
   }[tone];
   const label = {
     primary: 'text-white',
     danger: armed ? 'text-white' : 'text-red-600',
-    plain: 'text-neutral-800',
+    plain: 'text-fg',
   }[tone];
 
   return (
@@ -111,7 +114,7 @@ export function ActionButton({ title, onPress, tone = 'plain', confirm, disabled
       onPress={handlePress}
       className={`h-10 items-center justify-center rounded-xl px-4 ${container} ${disabled || busy ? 'opacity-50' : ''}`}>
       {busy ? (
-        <ActivityIndicator size="small" color={tone === 'primary' || armed ? '#ffffff' : '#525252'} />
+        <ActivityIndicator size="small" color={tone === 'primary' || armed ? '#ffffff' : colors.muted} />
       ) : (
         <Text className={`text-sm font-semibold ${label}`}>{armed ? '한 번 더 눌러 확인' : title}</Text>
       )}

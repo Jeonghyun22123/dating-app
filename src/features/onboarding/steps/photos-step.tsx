@@ -14,11 +14,12 @@ import {
   type PhotoWithUrl,
   photoSource,
 } from '@/features/photos/api';
+import { useThemeColors } from '@/theme/theme-view';
 
 function PhotoTile({ photo, onDelete }: { photo: PhotoWithUrl; onDelete: () => void }) {
   const pending = photo.moderation_status === 'pending';
   return (
-    <View className="aspect-[4/5] w-[31%] overflow-hidden rounded-2xl bg-neutral-200">
+    <View className="aspect-[4/5] w-[31%] overflow-hidden rounded-2xl bg-field">
       {photo.url ? <Image source={photoSource(photo.url)} transition={150} style={{ flex: 1 }} contentFit="cover" /> : null}
       {pending ? (
         <View className="absolute bottom-0 left-0 right-0 bg-black/60 py-1">
@@ -46,6 +47,7 @@ export function PhotosStep({
   progress: string;
   onDone: () => void;
 }) {
+  const colors = useThemeColors();
   const photosQuery = useMyPhotos(userId);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,16 +117,16 @@ export function PhotosStep({
             accessibilityLabel="사진 추가"
             disabled={!canAdd}
             onPress={handleAdd}
-            className="aspect-[4/5] w-[31%] items-center justify-center rounded-2xl border-2 border-dashed border-neutral-300 bg-white">
+            className="aspect-[4/5] w-[31%] items-center justify-center rounded-2xl border-2 border-dashed border-line bg-card">
             {uploading ? (
-              <ActivityIndicator color="#f43f5e" />
+              <ActivityIndicator color={colors.brand} />
             ) : (
-              <Text className="text-3xl text-neutral-400">＋</Text>
+              <Text className="text-3xl text-subtle">＋</Text>
             )}
           </Pressable>
         ) : null}
       </View>
-      {uploading ? <Text className="text-sm text-neutral-500">사진을 올리고 검수하는 중이에요…</Text> : null}
+      {uploading ? <Text className="text-sm text-muted">사진을 올리고 검수하는 중이에요…</Text> : null}
       {notice ? <Text className="text-sm text-emerald-600">{notice}</Text> : null}
     </Screen>
   );

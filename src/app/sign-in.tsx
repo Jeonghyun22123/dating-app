@@ -55,7 +55,7 @@ export default function SignInScreen() {
       <View className="gap-4">
         <Button title="로그인" onPress={handleSubmit} loading={loading} />
         <View className="flex-row justify-center gap-1">
-          <Text className="text-base text-neutral-600">아직 계정이 없나요?</Text>
+          <Text className="text-base text-muted">아직 계정이 없나요?</Text>
           <Link href="/sign-up" replace className="text-base font-semibold text-brand-600">
             회원가입
           </Link>

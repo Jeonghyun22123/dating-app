@@ -86,6 +86,11 @@ where id = (select id from auth.users where email = 'you@example.com');
 
 4. 앱에서 새로고침 → 내 프로필 탭의 "관리자 페이지" 버튼 또는 주소 `/admin`
 
+### 설정 화면 (알림 · 화면 테마)
+
+SQL Editor 에 [`supabase_settings.sql`](./supabase_settings.sql) 을 실행하면 알림 수신 설정이 저장됩니다.
+실행하지 않아도 앱과 화면 테마는 동작하고, 설정 화면의 알림 영역에만 안내가 표시됩니다.
+
 ## 구조
 
 ```
@@ -102,6 +107,8 @@ src/
     chat/         매칭 목록, 메시지, 실시간 구독
     safety/       신고·차단·매칭 해제 시트
     admin/        관리자 페이지 (통계, 셀카 심사, 신고, 회원)
+    settings/     알림 수신 설정 저장
+  theme/          화면 테마(화이트/다크/블랙 & 핑크) 정의와 적용
   lib/            env, supabase, auth, analytics(PostHog), query-client
   providers/      app-providers.tsx
   stores/         auth-store, onboarding-store (Zustand)
@@ -113,6 +120,7 @@ supabase_migration.sql        Phase 1 스키마
 supabase_phase2.sql           Phase 2 스키마 + Storage
 supabase_phase3.sql           Phase 3 추천·매칭·채팅 함수
 supabase_phase4.sql           Phase 4 관리자 함수 + 작업 기록
+supabase_settings.sql         알림 수신 설정
 supabase_seed_test_users.sql  개발용 가짜 프로필
 supabase_seed_reset.sql       개발용: 가짜 프로필 테스트 기록 초기화
 scripts/seed-photos.mjs       개발용: 가짜 프로필에 사진 넣기

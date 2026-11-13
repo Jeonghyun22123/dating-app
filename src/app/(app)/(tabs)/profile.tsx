@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
@@ -9,6 +10,7 @@ import { useMyPhotos, photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
 import { signOut } from '@/lib/auth';
+import { useThemeColors } from '@/theme/theme-view';
 
 const VERIFICATION_LABEL = {
   pending: '셀카 인증 심사 중',
@@ -19,6 +21,7 @@ const VERIFICATION_LABEL = {
 /** 내 프로필 탭. 다른 사람에게 보이는 모습 그대로 보여줍니다. (수정 기능은 이후 Phase) */
 export default function MyProfileScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { data: profile } = useMyProfile();
   const { data: photos } = useMyPhotos(profile?.id);
 
@@ -29,7 +32,6 @@ export default function MyProfileScreen() {
 
   return (
     <Screen
-      title="내 프로필"
       footer={
         <>
           {profile.verification_status === 'rejected' ? (
@@ -41,24 +43,39 @@ export default function MyProfileScreen() {
           <Button title="로그아웃" variant="secondary" onPress={signOut} />
         </>
       }>
-      <View className="overflow-hidden rounded-3xl bg-white">
-        <View className="aspect-[4/5] w-full bg-neutral-200">
+      <View className="flex-row items-center justify-between">
+        <Text className="text-3xl font-bold text-fg">내 프로필</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="설정"
+          hitSlop={8}
+          onPress={() => router.push('/settings')}>
+          <Ionicons name="settings-outline" size={26} color={colors.fg} />
+        </Pressable>
+      </View>
+      <View className="overflow-hidden rounded-3xl bg-card">
+        <View className="aspect-[4/5] w-full bg-field">
           {mainPhoto?.url ? (
-            <Image source={photoSource(mainPhoto.url)} transition={150} style={{ flex: 1 }} contentFit="cover" />
+            <Image
+              source={photoSource(mainPhoto.url)}
+              transition={150}
+              style={{ flex: 1 }}
+              contentFit="cover"
+            />
           ) : null}
         </View>
         <View className="gap-3 p-5">
-          <Text className="text-2xl font-bold text-neutral-900">
+          <Text className="text-2xl font-bold text-fg">
             {profile.nickname}, {calculateAge(profile.birth_date)}
           </Text>
-          <Text className="text-base text-neutral-600">
+          <Text className="text-base text-muted">
             {profile.neighborhood_name} · {purpose}
           </Text>
           <Text
-            className={`text-sm font-medium ${profile.verification_status === 'approved' ? 'text-emerald-600' : 'text-neutral-500'}`}>
+            className={`text-sm font-medium ${profile.verification_status === 'approved' ? 'text-emerald-600' : 'text-muted'}`}>
             {VERIFICATION_LABEL[profile.verification_status]}
           </Text>
-          {profile.bio ? <Text className="text-base leading-6 text-neutral-800">{profile.bio}</Text> : null}
+          {profile.bio ? <Text className="text-base leading-6 text-fg">{profile.bio}</Text> : null}
           <View className="flex-row flex-wrap gap-2">
             {profile.hobbies.map((hobby) => (
               <View key={hobby} className="rounded-full bg-brand-50 px-3 py-1">
