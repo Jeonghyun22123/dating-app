@@ -25,18 +25,28 @@ export type DiscoverProfile = {
   photoUrls: string[];
 };
 
+export type DiscoverResult = {
+  /** 이 목록을 서버에 요청하기 시작한 시각 (ms). 그 뒤에 처리된 결정은 목록에 반영되지 않았을 수 있습니다. */
+  startedAt: number;
+  profiles: DiscoverProfile[];
+};
+
 export const discoverKey = (maxKm: number) => ['discover', maxKm] as const;
 
-export async function fetchDiscover(maxKm: number): Promise<DiscoverProfile[]> {
+export async function fetchDiscover(maxKm: number): Promise<DiscoverResult> {
+  const startedAt = Date.now();
   const { data, error } = await supabase.rpc('discover_profiles', { p_max_km: maxKm, p_limit: 20 });
   if (error) throw error;
 
   const rows = (data ?? []) as Omit<DiscoverProfile, 'photoUrls'>[];
   const urls = await signPhotoPaths(rows.flatMap((row) => row.photo_paths ?? []));
-  return rows.map((row) => ({
-    ...row,
-    photoUrls: (row.photo_paths ?? []).flatMap((path) => urls.get(path) ?? []),
-  }));
+  return {
+    startedAt,
+    profiles: rows.map((row) => ({
+      ...row,
+      photoUrls: (row.photo_paths ?? []).flatMap((path) => urls.get(path) ?? []),
+    })),
+  };
 }
 
 export function useDiscover(maxKm: number) {
@@ -50,10 +60,7 @@ export async function swipeProfile(targetId: string, action: 'like' | 'pass'): P
   return (data as string | null) ?? null;
 }
 
-/** 방금 넘긴 카드를 화면 목록에서 즉시 제거하고, 남은 카드가 적으면 새로 받아옵니다. */
-export function removeFromDiscover(maxKm: number, targetId: string) {
-  const key = discoverKey(maxKm);
-  const next = (queryClient.getQueryData<DiscoverProfile[]>(key) ?? []).filter((p) => p.id !== targetId);
-  queryClient.setQueryData(key, next);
-  if (next.length <= 2) queryClient.invalidateQueries({ queryKey: ['discover'] });
+/** 추천 목록을 서버에서 다시 받아옵니다. */
+export function refreshDiscover() {
+  return queryClient.invalidateQueries({ queryKey: ['discover'] });
 }

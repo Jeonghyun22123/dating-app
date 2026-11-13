@@ -4,18 +4,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { makeMutable, type SharedValue } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import {
   DISTANCE_OPTIONS,
-  removeFromDiscover,
+  refreshDiscover,
   swipeProfile,
   useDiscover,
   type DiscoverProfile,
   type DistanceKm,
 } from '@/features/discover/api';
-import { SlideCard, type SlideCardHandle } from '@/features/discover/slide-card';
+import { DeckCard, type DeckAction } from '@/features/discover/deck-card';
 import { photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
@@ -221,41 +222,72 @@ function ProfileCard({ profile, myHobbies, maxKm, onChangeKm, onOpenSafety, onPa
   );
 }
 
+/**
+ * 이미 결정한(넘긴) 프로필 기록.
+ *   'pending' = 서버에 저장하는 중, 숫자 = 저장이 끝난 시각(ms)
+ * 추천 목록이 이 시각보다 "나중에" 요청된 것이면 서버가 이미 빼고 준 것이라 기록이 필요 없고,
+ * 그보다 먼저 요청된 목록에는 아직 들어 있을 수 있어서 화면에서 가려 줍니다.
+ */
+type Handled = Record<string, 'pending' | number>;
+
 export default function DiscoverScreen() {
   const router = useRouter();
   const { data: me } = useMyProfile();
   const [maxKm, setMaxKm] = useState<DistanceKm>(30);
   const discover = useDiscover(maxKm);
-  const [busy, setBusy] = useState(false);
+  const [handled, setHandled] = useState<Handled>({});
   const [error, setError] = useState<string | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
   const [matched, setMatched] = useState<{ matchId: string; nickname: string } | null>(null);
-  const cardRef = useRef<SlideCardHandle>(null);
 
-  const current = discover.data?.[0];
-  const next = discover.data?.[1];
+  // 카드마다 가로 위치 값을 하나씩 만들어 보관합니다 (뒤 카드가 앞 카드의 움직임을 따라가는 데 사용).
+  const positions = useRef(new Map<string, SharedValue<number>>());
+  function positionOf(id: string) {
+    let value = positions.current.get(id);
+    if (!value) {
+      value = makeMutable(0);
+      positions.current.set(id, value);
+    }
+    return value;
+  }
+
+  const startedAt = discover.data?.startedAt ?? 0;
+  const deck = (discover.data?.profiles ?? []).filter((profile) => {
+    const state = handled[profile.id];
+    return state === undefined || (state !== 'pending' && state < startedAt);
+  });
+  const current = deck[0];
+  const next = deck[1];
   const myHobbies = me?.hobbies ?? [];
 
-  /** 반환값: 처리 성공 여부 (실패하면 밀어낸 카드가 제자리로 돌아옵니다) */
-  async function handleSwipe(action: 'like' | 'pass'): Promise<boolean> {
-    if (!current || busy) return false;
+  /**
+   * 카드가 날아간 직후 호출됩니다. 화면에서는 바로 다음 카드로 넘어가고, 저장은 뒤에서 합니다.
+   * 저장에 실패하면 안내를 띄우고 그 카드를 다시 보여줍니다.
+   */
+  async function handleDecide(profile: DiscoverProfile, action: DeckAction) {
     setError(null);
-    setBusy(true);
+    setHandled((state) => ({ ...state, [profile.id]: 'pending' }));
+    const remaining = deck.length - 1;
     try {
-      const matchId = await swipeProfile(current.id, action);
+      const matchId = await swipeProfile(profile.id, action);
       track(action === 'like' ? AnalyticsEvent.SwipeLike : AnalyticsEvent.SwipePass);
-      removeFromDiscover(maxKm, current.id);
+      setHandled((state) => ({ ...state, [profile.id]: Date.now() }));
       if (matchId) {
         track(AnalyticsEvent.MatchCreated);
-        setMatched({ matchId, nickname: current.nickname });
+        setMatched({ matchId, nickname: profile.nickname });
       }
-      return true;
+      // 남은 카드가 적으면 새로 받아옵니다 (저장이 끝난 뒤라서 방금 넘긴 사람은 빠져서 옵니다).
+      if (remaining <= 2) refreshDiscover();
     } catch {
+      positionOf(profile.id).value = 0;
+      setHandled(({ [profile.id]: _failed, ...rest }) => rest);
       setError('처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
-      return false;
-    } finally {
-      setBusy(false);
     }
+  }
+
+  /** 차단 등으로 더 볼 수 없게 된 프로필을 화면에서 뺍니다. */
+  function hide(profileId: string) {
+    setHandled((state) => ({ ...state, [profileId]: Date.now() }));
   }
 
   const noop = () => {};
@@ -265,36 +297,33 @@ export default function DiscoverScreen() {
     <SafeAreaView edges={['top']} className="flex-1 items-center bg-neutral-50">
       <View className="w-full max-w-md flex-1 px-2 pb-2 pt-1">
         {current ? (
-          // key 를 주어 카드가 바뀔 때 밀린 위치·사진 순서 등 내부 상태를 초기화합니다.
-          <SlideCard
-            key={current.id}
-            ref={cardRef}
-            disabled={busy}
-            onDecide={handleSwipe}
-            behind={
-              next ? (
-                <ProfileCard
-                  profile={next}
-                  myHobbies={myHobbies}
-                  maxKm={maxKm}
-                  onChangeKm={noop}
-                  onOpenSafety={noop}
-                  onPass={noop}
-                  onLike={noop}
-                />
-              ) : undefined
-            }>
-            <ProfileCard
-              profile={current}
-              myHobbies={myHobbies}
-              maxKm={maxKm}
-              onChangeKm={setMaxKm}
-              onOpenSafety={() => setSafetyOpen(true)}
-              onPass={() => cardRef.current?.decide('pass')}
-              onLike={() => cardRef.current?.decide('like')}
-              disabled={busy}
-            />
-          </SlideCard>
+          // 카드 두 장(맨 위 + 바로 다음)을 겹쳐 그립니다. key 가 프로필 id 라서, 맨 위 카드가 빠지면
+          // 뒤에 있던 카드가 새로 만들어지지 않고 그대로 맨 위 카드가 됩니다 (깜빡임 없음).
+          <View className="flex-1">
+            {[current, next].map((profile) => {
+              if (!profile) return null;
+              const isTop = profile.id === current.id;
+              return (
+                <DeckCard
+                  key={profile.id}
+                  x={positionOf(profile.id)}
+                  frontX={isTop ? undefined : positionOf(current.id)}
+                  onDecide={(action) => handleDecide(profile, action)}>
+                  {(decide) => (
+                    <ProfileCard
+                      profile={profile}
+                      myHobbies={myHobbies}
+                      maxKm={maxKm}
+                      onChangeKm={isTop ? setMaxKm : noop}
+                      onOpenSafety={isTop ? () => setSafetyOpen(true) : noop}
+                      onPass={() => decide('pass')}
+                      onLike={() => decide('like')}
+                    />
+                  )}
+                </DeckCard>
+              );
+            })}
+          </View>
         ) : (
           <View className="flex-1 items-center justify-center gap-5 px-6">
             {discover.isPending ? (
@@ -341,7 +370,7 @@ export default function DiscoverScreen() {
           onClose={() => setSafetyOpen(false)}
           myId={me.id}
           target={current}
-          onRemoved={() => removeFromDiscover(maxKm, current.id)}
+          onRemoved={() => hide(current.id)}
         />
       ) : null}
 
