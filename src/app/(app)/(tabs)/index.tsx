@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import {
   type DiscoverProfile,
   type DistanceKm,
 } from '@/features/discover/api';
-import { SlideCard } from '@/features/discover/slide-card';
+import { SlideCard, type SlideCardHandle } from '@/features/discover/slide-card';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
 import { SafetySheet } from '@/features/safety/safety-sheet';
@@ -123,6 +123,8 @@ export default function DiscoverScreen() {
   const [matched, setMatched] = useState<{ matchId: string; nickname: string } | null>(null);
 
   const current = discover.data?.[0];
+  const next = discover.data?.[1];
+  const cardRef = useRef<SlideCardHandle>(null);
 
   /** 반환값: 처리 성공 여부 (실패하면 밀어낸 카드가 제자리로 돌아옵니다) */
   async function handleSwipe(action: 'like' | 'pass'): Promise<boolean> {
@@ -155,10 +157,10 @@ export default function DiscoverScreen() {
             <ErrorText>{error}</ErrorText>
             <View className="flex-row gap-3">
               <View className="flex-1">
-                <Button title="다음에" variant="secondary" onPress={() => handleSwipe('pass')} disabled={busy} />
+                <Button title="다음에" variant="secondary" onPress={() => cardRef.current?.decide('pass')} disabled={busy} />
               </View>
               <View className="flex-1">
-                <Button title="관심 있어요" onPress={() => handleSwipe('like')} disabled={busy} />
+                <Button title="관심 있어요" onPress={() => cardRef.current?.decide('like')} disabled={busy} />
               </View>
             </View>
           </>
@@ -182,7 +184,13 @@ export default function DiscoverScreen() {
       ) : current ? (
         // key 를 주어 카드가 바뀔 때 밀린 위치·사진 순서 등 내부 상태를 초기화합니다.
         <View key={current.id} className="gap-3">
-          <SlideCard disabled={busy} onDecide={handleSwipe}>
+          <SlideCard
+            ref={cardRef}
+            disabled={busy}
+            onDecide={handleSwipe}
+            behind={
+              next ? <ProfileCard profile={next} myHobbies={me?.hobbies ?? []} onOpenSafety={() => {}} /> : undefined
+            }>
             <ProfileCard profile={current} myHobbies={me?.hobbies ?? []} onOpenSafety={() => setSafetyOpen(true)} />
           </SlideCard>
           <Text className="text-center text-sm text-neutral-400">
