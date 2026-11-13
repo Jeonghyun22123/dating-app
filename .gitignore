@@ -50,3 +50,6 @@ yarn-error.*
 supabase/functions/deno.lock
 supabase/functions/.env
 supabase/.temp/
+
+# 테스트용 가짜 프로필 사진 (직접 넣는 폴더)
+seed-photos/

@@ -59,6 +59,13 @@ npx supabase secrets set SIGHTENGINE_API_USER=... SIGHTENGINE_API_SECRET=... OPE
 2. (개발용) 혼자 테스트하려면 [`supabase_seed_test_users.sql`](./supabase_seed_test_users.sql) 로 가짜 프로필 8명 생성.
    내 위치 근처에 만들어지며, 그중 4명은 나에게 이미 관심을 보낸 상태라 바로 매칭을 확인할 수 있습니다.
    지울 때는 파일 맨 아래 "정리" 쿼리를 실행하세요.
+3. (선택) 가짜 프로필에 사진 넣기. service_role 키는 대시보드 Project Settings > API 에 있으며, 파일에 저장하지 말고 명령어 앞에만 붙여 쓰세요.
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=여기에_키 node scripts/seed-photos.mjs
+```
+
+   직접 고른 사진을 쓰려면 `seed-photos/1.jpg` ~ `8.jpg` (여러 장은 `1-1.jpg`, `1-2.jpg`) 로 넣고 실행합니다.
 
 ### Phase 4 (관리자 페이지)
 
