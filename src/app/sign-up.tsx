@@ -1,8 +1,8 @@
-import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { TextLink } from '@/components/ui/text-link';
 import { ErrorText, Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { AnalyticsEvent, track } from '@/lib/analytics';
@@ -41,9 +41,7 @@ export default function SignUpScreen() {
         <Text className="text-sm leading-5 text-muted">
           메일이 보이지 않으면 스팸함을 확인해 주세요. 이미 가입된 이메일이라면 메일이 오지 않을 수 있어요.
         </Text>
-        <Link href="/sign-in" replace className="text-base font-semibold text-brand-600">
-          로그인 화면으로
-        </Link>
+        <TextLink label="로그인 화면으로" href="/sign-in" />
       </Screen>
     );
   }
@@ -82,12 +80,7 @@ export default function SignUpScreen() {
       </View>
       <View className="gap-4">
         <Button title="가입하기" onPress={handleSubmit} loading={loading} />
-        <View className="flex-row justify-center gap-1">
-          <Text className="text-base text-muted">이미 계정이 있나요?</Text>
-          <Link href="/sign-in" replace className="text-base font-semibold text-brand-600">
-            로그인
-          </Link>
-        </View>
+        <TextLink prompt="이미 계정이 있나요?" label="로그인" href="/sign-in" />
       </View>
     </Screen>
   );
