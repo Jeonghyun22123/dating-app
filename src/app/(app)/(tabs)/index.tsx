@@ -2,9 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
-import { makeMutable, type SharedValue } from 'react-native-reanimated';
+import Animated, {
+  makeMutable,
+  type SharedValue,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -24,8 +30,16 @@ import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 
 const MAX_HOBBIES = 5;
+/** 뒤 카드가 맨 위로 올라온 뒤 선명해지는 데 걸리는 시간 (ms) */
+const REVEAL_MS = 320;
+/** 가려진 카드의 사진 흐림 정도. 얼굴을 알아볼 수 없고 윤곽만 보이는 수준. */
+const BLUR_RADIUS = 28;
 /** 사진 위 글자가 밝은 배경에서도 읽히도록 옅은 그림자를 줍니다. */
-const shadow = { textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 };
+const shadow = {
+  textShadowColor: 'rgba(0,0,0,0.45)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 4,
+};
 
 /** 거리 범위 선택. 사진 위(onPhoto)와 빈 화면 양쪽에서 씁니다. */
 function DistanceChips({
@@ -81,20 +95,45 @@ type CardProps = {
   onPass: () => void;
   onLike: () => void;
   disabled?: boolean;
+  /**
+   * false 면 가려진 상태: 사진은 윤곽만 보이게 흐려지고 이름·소개 등 정보는 숨깁니다.
+   * 앞 카드를 완전히 넘겨 이 카드가 맨 위가 된 뒤에야 true 가 되어 선명해집니다.
+   */
+  revealed: boolean;
 };
 
 /**
  * 화면을 꽉 채우는 프로필 카드. 사진이 배경이고 모든 정보와 버튼이 사진 위에 올라갑니다.
  * (세로 스크롤 없음 — 소개글은 3줄, 취미는 5개까지만 보여줍니다)
  */
-function ProfileCard({ profile, myHobbies, maxKm, onChangeKm, onOpenSafety, onPass, onLike, disabled }: CardProps) {
+function ProfileCard({
+  profile,
+  myHobbies,
+  maxKm,
+  onChangeKm,
+  onOpenSafety,
+  onPass,
+  onLike,
+  disabled,
+  revealed,
+}: CardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const photos = profile.photoUrls;
   const index = Math.min(photoIndex, Math.max(photos.length - 1, 0));
   const purpose = PURPOSES.find((item) => item.value === profile.purpose)?.label;
   // 나와 겹치는 취미를 앞에 보여줍니다.
-  const hobbies = [...profile.hobbies].sort((a, b) => Number(myHobbies.includes(b)) - Number(myHobbies.includes(a)));
+  const hobbies = [...profile.hobbies].sort(
+    (a, b) => Number(myHobbies.includes(b)) - Number(myHobbies.includes(a)),
+  );
   const hidden = hobbies.length - MAX_HOBBIES;
+
+  // 0 = 가려짐, 1 = 공개. 처음부터 맨 위인 카드는 애니메이션 없이 바로 공개 상태로 시작합니다.
+  const reveal = useSharedValue(revealed ? 1 : 0);
+  useEffect(() => {
+    reveal.value = withTiming(revealed ? 1 : 0, { duration: REVEAL_MS });
+  }, [revealed, reveal]);
+  const coverStyle = useAnimatedStyle(() => ({ opacity: 1 - reveal.value }));
+  const infoStyle = useAnimatedStyle(() => ({ opacity: reveal.value }));
 
   return (
     <View className="flex-1 overflow-hidden rounded-3xl bg-brand-100">
@@ -102,18 +141,63 @@ function ProfileCard({ profile, myHobbies, maxKm, onChangeKm, onOpenSafety, onPa
           가로채서 카드 밀기가 안 되므로 pointerEvents 를 끕니다. */}
       <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         {photos.length > 0 ? (
-          <Image source={photoSource(photos[index])} style={{ flex: 1 }} contentFit="cover" transition={150} />
+          <Image
+            source={photoSource(photos[index])}
+            style={{ flex: 1 }}
+            contentFit="cover"
+            transition={150}
+          />
         ) : (
-          <View className="flex-1 items-center justify-center pb-40">
+          <Animated.View
+            style={[
+              {
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingBottom: 160,
+              },
+              infoStyle,
+            ]}>
             <Text className="text-9xl font-bold text-brand-300">{profile.nickname.slice(0, 1)}</Text>
-          </View>
+          </Animated.View>
         )}
       </View>
+
+      {/* 가림막: 같은 사진을 흐리게 한 것을 선명한 사진 위에 덮어 두었다가, 공개될 때 서서히 걷어냅니다.
+          흐린 사진은 가장자리가 비치지 않도록 조금 키워서 그립니다. */}
+      <Animated.View
+        pointerEvents="none"
+        testID="card-cover"
+        style={[
+          {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflow: 'hidden',
+          },
+          coverStyle,
+        ]}>
+        {photos.length > 0 ? (
+          <Image
+            source={photoSource(photos[0])}
+            blurRadius={BLUR_RADIUS}
+            style={{ flex: 1, transform: [{ scale: 1.2 }] }}
+            contentFit="cover"
+          />
+        ) : null}
+        <View className="absolute inset-0 bg-black/20" />
+      </Animated.View>
 
       {/* 사진 좌우를 눌러 이전/다음 사진으로 이동 */}
       {photos.length > 1 ? (
         <View className="absolute inset-0 flex-row">
-          <Pressable accessibilityLabel="이전 사진" className="flex-1" onPress={() => setPhotoIndex(Math.max(index - 1, 0))} />
+          <Pressable
+            accessibilityLabel="이전 사진"
+            className="flex-1"
+            onPress={() => setPhotoIndex(Math.max(index - 1, 0))}
+          />
           <Pressable
             accessibilityLabel="다음 사진"
             className="flex-1"
@@ -122,102 +206,125 @@ function ProfileCard({ profile, myHobbies, maxKm, onChangeKm, onOpenSafety, onPa
         </View>
       ) : null}
 
-      {/* 위쪽: 사진 위치 표시, 거리 범위, 신고·차단 */}
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)']}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 110 }}
-      />
-      <View pointerEvents="box-none" className="absolute left-0 right-0 top-0 gap-3 p-3">
-        {photos.length > 1 ? (
-          <View pointerEvents="none" className="flex-row gap-1">
-            {photos.map((url, i) => (
-              <View key={url} className={`h-1 flex-1 rounded-full ${i === index ? 'bg-white' : 'bg-white/40'}`} />
-            ))}
-          </View>
-        ) : null}
-        <View pointerEvents="box-none" className="flex-row items-center justify-between">
-          <DistanceChips value={maxKm} onChange={onChangeKm} onPhoto />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="신고 또는 차단"
-            hitSlop={8}
-            onPress={onOpenSafety}
-            className="h-9 w-9 items-center justify-center rounded-full bg-black/35">
-            <Ionicons name="ellipsis-horizontal" size={18} color="#ffffff" />
-          </Pressable>
-        </View>
-      </View>
-
-      {/* 아래쪽: 프로필 정보와 버튼 */}
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.88)']}
-        locations={[0, 0.45, 1]}
-        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%' }}
-      />
-      <View pointerEvents="box-none" className="absolute bottom-0 left-0 right-0 gap-2.5 p-4">
-        <View pointerEvents="none" className="gap-2.5">
-          <View className="flex-row flex-wrap items-center gap-2">
-            <Text style={shadow} className="text-3xl font-bold text-white">
-              {profile.nickname}, {profile.age}
-            </Text>
-            {profile.verification_status === 'approved' ? (
-              <View className="flex-row items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1">
-                <Ionicons name="checkmark-circle" size={14} color="#ffffff" />
-                <Text className="text-xs font-semibold text-white">본인 인증</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <Text style={shadow} className="text-base text-white">
-            {profile.neighborhood_name} · 약 {profile.distance_km}km · {purpose}
-          </Text>
-
-          {profile.bio ? (
-            <Text style={shadow} numberOfLines={3} className="text-base leading-6 text-white/95">
-              {profile.bio}
-            </Text>
+      {/* 여기부터의 정보(위쪽 조작부, 아래쪽 프로필)는 가려진 동안 보이지 않습니다. */}
+      <Animated.View
+        pointerEvents="box-none"
+        testID="card-info"
+        style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, infoStyle]}>
+        {/* 위쪽: 사진 위치 표시, 거리 범위, 신고·차단 */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)']}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 110,
+          }}
+        />
+        <View pointerEvents="box-none" className="absolute left-0 right-0 top-0 gap-3 p-3">
+          {photos.length > 1 ? (
+            <View pointerEvents="none" className="flex-row gap-1">
+              {photos.map((url, i) => (
+                <View
+                  key={url}
+                  className={`h-1 flex-1 rounded-full ${i === index ? 'bg-white' : 'bg-white/40'}`}
+                />
+              ))}
+            </View>
           ) : null}
-
-          <View className="flex-row flex-wrap gap-1.5">
-            {hobbies.slice(0, MAX_HOBBIES).map((hobby) => {
-              const shared = myHobbies.includes(hobby);
-              return (
-                <View key={hobby} className={`rounded-full px-3 py-1 ${shared ? 'bg-brand-500' : 'bg-white/25'}`}>
-                  <Text className={`text-sm text-white ${shared ? 'font-semibold' : ''}`}>{hobby}</Text>
-                </View>
-              );
-            })}
-            {hidden > 0 ? (
-              <View className="rounded-full bg-white/25 px-3 py-1">
-                <Text className="text-sm text-white">+{hidden}</Text>
-              </View>
-            ) : null}
+          <View pointerEvents="box-none" className="flex-row items-center justify-between">
+            <DistanceChips value={maxKm} onChange={onChangeKm} onPhoto />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="신고 또는 차단"
+              hitSlop={8}
+              onPress={onOpenSafety}
+              className="h-9 w-9 items-center justify-center rounded-full bg-black/35">
+              <Ionicons name="ellipsis-horizontal" size={18} color="#ffffff" />
+            </Pressable>
           </View>
         </View>
 
-        <View className="mt-1 flex-row gap-3">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="다음에"
-            disabled={disabled}
-            onPress={onPass}
-            className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-white/95 active:bg-white/80 ${disabled ? 'opacity-50' : ''}`}>
-            <Ionicons name="close" size={20} color="#404040" />
-            <Text className="text-base font-semibold text-neutral-800">다음에</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="관심 있어요"
-            disabled={disabled}
-            onPress={onLike}
-            className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-brand-500 active:bg-brand-600 ${disabled ? 'opacity-50' : ''}`}>
-            <Ionicons name="heart" size={20} color="#ffffff" />
-            <Text className="text-base font-semibold text-white">관심 있어요</Text>
-          </Pressable>
+        {/* 아래쪽: 프로필 정보와 버튼 */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.88)']}
+          locations={[0, 0.45, 1]}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: '62%',
+          }}
+        />
+        <View pointerEvents="box-none" className="absolute bottom-0 left-0 right-0 gap-2.5 p-4">
+          <View pointerEvents="none" className="gap-2.5">
+            <View className="flex-row flex-wrap items-center gap-2">
+              <Text style={shadow} className="text-3xl font-bold text-white">
+                {profile.nickname}, {profile.age}
+              </Text>
+              {profile.verification_status === 'approved' ? (
+                <View className="flex-row items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1">
+                  <Ionicons name="checkmark-circle" size={14} color="#ffffff" />
+                  <Text className="text-xs font-semibold text-white">본인 인증</Text>
+                </View>
+              ) : null}
+            </View>
+
+            <Text style={shadow} className="text-base text-white">
+              {profile.neighborhood_name} · 약 {profile.distance_km}km · {purpose}
+            </Text>
+
+            {profile.bio ? (
+              <Text style={shadow} numberOfLines={3} className="text-base leading-6 text-white/95">
+                {profile.bio}
+              </Text>
+            ) : null}
+
+            <View className="flex-row flex-wrap gap-1.5">
+              {hobbies.slice(0, MAX_HOBBIES).map((hobby) => {
+                const shared = myHobbies.includes(hobby);
+                return (
+                  <View
+                    key={hobby}
+                    className={`rounded-full px-3 py-1 ${shared ? 'bg-brand-500' : 'bg-white/25'}`}>
+                    <Text className={`text-sm text-white ${shared ? 'font-semibold' : ''}`}>{hobby}</Text>
+                  </View>
+                );
+              })}
+              {hidden > 0 ? (
+                <View className="rounded-full bg-white/25 px-3 py-1">
+                  <Text className="text-sm text-white">+{hidden}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+
+          <View className="mt-1 flex-row gap-3">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="다음에"
+              disabled={disabled}
+              onPress={onPass}
+              className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-white/95 active:bg-white/80 ${disabled ? 'opacity-50' : ''}`}>
+              <Ionicons name="close" size={20} color="#404040" />
+              <Text className="text-base font-semibold text-neutral-800">다음에</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="관심 있어요"
+              disabled={disabled}
+              onPress={onLike}
+              className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-brand-500 active:bg-brand-600 ${disabled ? 'opacity-50' : ''}`}>
+              <Ionicons name="heart" size={20} color="#ffffff" />
+              <Text className="text-base font-semibold text-white">관심 있어요</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -238,7 +345,10 @@ export default function DiscoverScreen() {
   const [handled, setHandled] = useState<Handled>({});
   const [error, setError] = useState<string | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
-  const [matched, setMatched] = useState<{ matchId: string; nickname: string } | null>(null);
+  const [matched, setMatched] = useState<{
+    matchId: string;
+    nickname: string;
+  } | null>(null);
 
   // 카드마다 가로 위치 값을 하나씩 만들어 보관합니다 (뒤 카드가 앞 카드의 움직임을 따라가는 데 사용).
   const positions = useRef(new Map<string, SharedValue<number>>());
@@ -318,6 +428,7 @@ export default function DiscoverScreen() {
                       onOpenSafety={isTop ? () => setSafetyOpen(true) : noop}
                       onPass={() => decide('pass')}
                       onLike={() => decide('like')}
+                      revealed={isTop}
                     />
                   )}
                 </DeckCard>
@@ -337,7 +448,9 @@ export default function DiscoverScreen() {
               </>
             ) : (
               <>
-                <Text className="text-center text-xl font-bold text-neutral-900">근처의 새로운 사람을 모두 봤어요</Text>
+                <Text className="text-center text-xl font-bold text-neutral-900">
+                  근처의 새로운 사람을 모두 봤어요
+                </Text>
                 <Text className="text-center text-base leading-6 text-neutral-600">
                   거리 범위를 넓히거나 잠시 후 다시 확인해 보세요.
                 </Text>
