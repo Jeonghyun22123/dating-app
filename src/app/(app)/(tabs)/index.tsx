@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 import Animated, {
+  Easing,
+  interpolate,
   makeMutable,
   type SharedValue,
   useAnimatedStyle,
@@ -30,10 +32,18 @@ import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 
 const MAX_HOBBIES = 5;
-/** 뒤 카드가 맨 위로 올라온 뒤 선명해지는 데 걸리는 시간 (ms) */
-const REVEAL_MS = 320;
-/** 가려진 카드의 사진 흐림 정도. 얼굴을 알아볼 수 없고 윤곽만 보이는 수준. */
-const BLUR_RADIUS = 28;
+/** 뒤 카드가 맨 위로 올라온 뒤 완전히 선명해지기까지 걸리는 시간 (ms) */
+const REVEAL_MS = 900;
+/**
+ * 가려진 카드의 사진 흐림 정도. 두 단계로 겹쳐 두고 차례로 걷어내서,
+ * 흐린 사진이 "딱" 사라지는 대신 초점이 서서히 맞는 것처럼 보이게 합니다.
+ *   진한 흐림: 얼굴은 물론 옷·배경도 알아보기 어려운 수준 (가려진 동안 보이는 모습)
+ *   옅은 흐림: 공개되는 도중에만 잠깐 보이는 중간 단계
+ */
+const BLUR_HEAVY = 60;
+const BLUR_LIGHT = 14;
+/** 카드 전체를 덮는 층의 공통 위치 */
+const COVER = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' } as const;
 /** 사진 위 글자가 밝은 배경에서도 읽히도록 옅은 그림자를 줍니다. */
 const shadow = {
   textShadowColor: 'rgba(0,0,0,0.45)',
@@ -130,10 +140,21 @@ function ProfileCard({
   // 0 = 가려짐, 1 = 공개. 처음부터 맨 위인 카드는 애니메이션 없이 바로 공개 상태로 시작합니다.
   const reveal = useSharedValue(revealed ? 1 : 0);
   useEffect(() => {
-    reveal.value = withTiming(revealed ? 1 : 0, { duration: REVEAL_MS });
+    reveal.value = withTiming(revealed ? 1 : 0, {
+      duration: REVEAL_MS,
+      easing: Easing.inOut(Easing.quad),
+    });
   }, [revealed, reveal]);
-  const coverStyle = useAnimatedStyle(() => ({ opacity: 1 - reveal.value }));
-  const infoStyle = useAnimatedStyle(() => ({ opacity: reveal.value }));
+  // 공개 순서: 진한 흐림이 먼저 걷히고 → 옅은 흐림이 걷히며 초점이 맞고 → 그 사이 정보가 떠오릅니다.
+  const heavyStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(reveal.value, [0, 0.6], [1, 0], 'clamp'),
+  }));
+  const lightStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(reveal.value, [0.3, 1], [1, 0], 'clamp'),
+  }));
+  const infoStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(reveal.value, [0.35, 1], [0, 1], 'clamp'),
+  }));
 
   return (
     <View className="flex-1 overflow-hidden rounded-3xl bg-brand-100">
@@ -163,31 +184,28 @@ function ProfileCard({
         )}
       </View>
 
-      {/* 가림막: 같은 사진을 흐리게 한 것을 선명한 사진 위에 덮어 두었다가, 공개될 때 서서히 걷어냅니다.
+      {/* 가림막: 같은 사진을 흐리게 한 것 두 장(옅은 것 위에 진한 것)을 선명한 사진 위에 덮어 둡니다.
           흐린 사진은 가장자리가 비치지 않도록 조금 키워서 그립니다. */}
-      <Animated.View
-        pointerEvents="none"
-        testID="card-cover"
-        style={[
-          {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            overflow: 'hidden',
-          },
-          coverStyle,
-        ]}>
+      {photos.length > 0 ? (
+        <Animated.View pointerEvents="none" style={[COVER, lightStyle]}>
+          <Image
+            source={photoSource(photos[0])}
+            blurRadius={BLUR_LIGHT}
+            style={{ flex: 1, transform: [{ scale: 1.1 }] }}
+            contentFit="cover"
+          />
+        </Animated.View>
+      ) : null}
+      <Animated.View pointerEvents="none" testID="card-cover" style={[COVER, heavyStyle]}>
         {photos.length > 0 ? (
           <Image
             source={photoSource(photos[0])}
-            blurRadius={BLUR_RADIUS}
-            style={{ flex: 1, transform: [{ scale: 1.2 }] }}
+            blurRadius={BLUR_HEAVY}
+            style={{ flex: 1, transform: [{ scale: 1.3 }] }}
             contentFit="cover"
           />
         ) : null}
-        <View className="absolute inset-0 bg-black/20" />
+        <View className="absolute inset-0 bg-black/25" />
       </Animated.View>
 
       {/* 사진 좌우를 눌러 이전/다음 사진으로 이동 */}
