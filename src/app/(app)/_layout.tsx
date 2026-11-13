@@ -12,6 +12,7 @@ export default function AppLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="chat/[matchId]" />
+      <Stack.Screen name="selfie" />
     </Stack>
   );
 }

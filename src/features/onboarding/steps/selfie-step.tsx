@@ -11,7 +11,16 @@ import { refreshMyProfile } from '@/features/profile/api';
  * 실시간 셀카 인증.
  * 보관함의 사진을 고를 수 없고, 반드시 지금 카메라로 찍은 사진만 제출됩니다.
  */
-export function SelfieStep({ userId, progress }: { userId: string; progress: string }) {
+export function SelfieStep({
+  userId,
+  progress,
+  onDone,
+}: {
+  userId: string;
+  progress?: string;
+  /** 제출 성공 후 호출 (온보딩 밖에서 다시 제출할 때 화면을 닫는 용도) */
+  onDone?: () => void;
+}) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [cameraReady, setCameraReady] = useState(false);
@@ -32,6 +41,7 @@ export function SelfieStep({ userId, progress }: { userId: string; progress: str
         setError('지금은 인증을 처리할 수 없어요. 잠시 후 다시 시도해 주세요.');
       } else {
         await refreshMyProfile(userId);
+        onDone?.();
       }
     } catch (e) {
       setError(

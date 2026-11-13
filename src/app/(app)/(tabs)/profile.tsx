@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ const VERIFICATION_LABEL = {
 
 /** 내 프로필 탭. 다른 사람에게 보이는 모습 그대로 보여줍니다. (수정 기능은 이후 Phase) */
 export default function MyProfileScreen() {
+  const router = useRouter();
   const { data: profile } = useMyProfile();
   const { data: photos } = useMyPhotos(profile?.id);
 
@@ -26,7 +28,19 @@ export default function MyProfileScreen() {
   const purpose = PURPOSES.find((item) => item.value === profile.purpose)?.label;
 
   return (
-    <Screen title="내 프로필" footer={<Button title="로그아웃" variant="secondary" onPress={signOut} />}>
+    <Screen
+      title="내 프로필"
+      footer={
+        <>
+          {profile.verification_status === 'rejected' ? (
+            <Button title="셀카 인증 다시 하기" onPress={() => router.push('/selfie')} />
+          ) : null}
+          {profile.role === 'admin' ? (
+            <Button title="관리자 페이지" variant="secondary" onPress={() => router.push('/admin')} />
+          ) : null}
+          <Button title="로그아웃" variant="secondary" onPress={signOut} />
+        </>
+      }>
       <View className="overflow-hidden rounded-3xl bg-white">
         <View className="aspect-[4/5] w-full bg-neutral-200">
           {mainPhoto?.url ? (

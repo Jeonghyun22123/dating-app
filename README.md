@@ -1,6 +1,6 @@
 # Dating App
 
-신뢰 기반 취미·동네 매칭 & 실시간 채팅 앱. 전체 기획은 [CLAUDE.md](./CLAUDE.md) 참고.
+신뢰 기반 취미·동네 매칭 & 실시간 채팅 앱. 전체 기획은 [CLAUDE.md](./CLAUDE.md), 진행 상황과 다음 단계는 [ROADMAP.md](./ROADMAP.md) 참고.
 
 - **앱**: Expo (Expo Router) + TypeScript + NativeWind — Web(PWA) / iOS / Android 단일 코드베이스
 - **상태**: Zustand + TanStack Query
@@ -60,11 +60,29 @@ npx supabase secrets set SIGHTENGINE_API_USER=... SIGHTENGINE_API_SECRET=... OPE
    내 위치 근처에 만들어지며, 그중 4명은 나에게 이미 관심을 보낸 상태라 바로 매칭을 확인할 수 있습니다.
    지울 때는 파일 맨 아래 "정리" 쿼리를 실행하세요.
 
+### Phase 4 (관리자 페이지)
+
+1. SQL Editor 에 [`supabase_phase4.sql`](./supabase_phase4.sql) 전체를 붙여넣고 실행
+2. Edge Function 추가 배포
+
+```bash
+npx supabase functions deploy admin-review-selfie --use-api
+```
+
+3. 내 계정을 관리자로 지정 (SQL Editor 에서 이메일을 바꿔 실행)
+
+```sql
+update profiles set role = 'admin'
+where id = (select id from auth.users where email = 'you@example.com');
+```
+
+4. 앱에서 새로고침 → 내 프로필 탭의 "관리자 페이지" 버튼 또는 주소 `/admin`
+
 ## 구조
 
 ```
 src/
-  app/            sign-in, sign-up, onboarding, (app)/(tabs)/{index,matches,profile}, (app)/chat/[matchId]
+  app/            sign-in, sign-up, onboarding, admin, (app)/(tabs)/{index,matches,profile}, (app)/chat/[matchId], (app)/selfie
                   _layout.tsx 가 로그인·온보딩 상태로 접근 제어
   components/ui/  Button, TextField, Chip, Screen, Avatar
   features/
@@ -75,15 +93,18 @@ src/
     discover/     추천 목록, 관심 표현/넘기기
     chat/         매칭 목록, 메시지, 실시간 구독
     safety/       신고·차단·매칭 해제 시트
+    admin/        관리자 페이지 (통계, 셀카 심사, 신고, 회원)
   lib/            env, supabase, auth, analytics(PostHog), query-client
   providers/      app-providers.tsx
   stores/         auth-store, onboarding-store (Zustand)
 supabase/functions/
   moderate-photo/             Sightengine 사진·셀카 검수
   update-profile-embedding/   OpenAI 임베딩 → profiles.embedding
+  admin-review-selfie/        셀카 승인·반려 + 셀카 파일 영구 삭제
 supabase_migration.sql        Phase 1 스키마
 supabase_phase2.sql           Phase 2 스키마 + Storage
 supabase_phase3.sql           Phase 3 추천·매칭·채팅 함수
+supabase_phase4.sql           Phase 4 관리자 함수 + 작업 기록
 supabase_seed_test_users.sql  개발용 가짜 프로필
 ```
 

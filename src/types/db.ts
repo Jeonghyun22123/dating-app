@@ -19,12 +19,13 @@ export type Profile = {
   verification_status: VerificationStatus;
   coin_balance: number;
   is_premium: boolean;
+  is_banned: boolean;
   onboarding_completed_at: string | null;
   selfie_submitted_at: string | null;
 };
 
 export const PROFILE_COLUMNS =
-  'id, role, nickname, gender, birth_date, is_adult_verified, purpose, hobbies, bio, neighborhood_name, trust_score, verification_status, coin_balance, is_premium, onboarding_completed_at, selfie_submitted_at';
+  'id, role, nickname, gender, birth_date, is_adult_verified, purpose, hobbies, bio, neighborhood_name, trust_score, verification_status, coin_balance, is_premium, is_banned, onboarding_completed_at, selfie_submitted_at';
 
 export type ProfilePhoto = {
   id: string;

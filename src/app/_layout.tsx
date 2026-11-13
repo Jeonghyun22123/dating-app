@@ -7,6 +7,7 @@ import { Text } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { LoadingScreen, Screen } from '@/components/ui/screen';
 import { useMyProfile } from '@/features/profile/api';
+import { signOut } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/env';
 import { AppProviders } from '@/providers/app-providers';
 import { useAuthStore } from '@/stores/auth-store';
@@ -16,6 +17,8 @@ import { useAuthStore } from '@/stores/auth-store';
  *   로그아웃 상태        → sign-in, sign-up
  *   로그인 + 온보딩 전   → onboarding
  *   로그인 + 온보딩 완료 → (app)
+ *   로그인 + 관리자      → admin (추가로 접근 가능)
+ *   정지된 계정          → 안내 화면만
  * 조건에 맞지 않는 주소로 들어오면 Expo Router 가 허용된 화면으로 돌려보냅니다.
  */
 function RootNavigator() {
@@ -42,7 +45,19 @@ function RootNavigator() {
     );
   }
 
+  if (session && profile.data?.is_banned) {
+    return (
+      <Screen
+        title="이용이 정지된 계정이에요"
+        subtitle="커뮤니티 가이드 위반으로 계정 이용이 제한되었습니다. 문의가 있으면 고객센터로 연락해 주세요.">
+        <Button title="로그아웃" variant="secondary" onPress={signOut} />
+      </Screen>
+    );
+  }
+
   const signedIn = !!session;
+  // 화면 노출용 확인일 뿐입니다. 실제 권한은 DB 함수가 매번 다시 검사합니다.
+  const isAdmin = signedIn && profile.data?.role === 'admin';
   const onboarded = !!profile.data?.onboarding_completed_at;
 
   return (
@@ -56,6 +71,9 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn && onboarded}>
         <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={isAdmin}>
+        <Stack.Screen name="admin" />
       </Stack.Protected>
     </Stack>
   );

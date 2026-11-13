@@ -18,6 +18,14 @@ function useAuthSync() {
       setSession(session);
       if (session) {
         identifyUser(session.user.id);
+        // 앱을 열거나 로그인할 때 마지막 활동 시각을 남깁니다 (관리자 통계의 '최근 활동'에 사용).
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+          supabase
+            .from('profiles')
+            .update({ last_active_at: new Date().toISOString() })
+            .eq('id', session.user.id)
+            .then(() => {});
+        }
       } else if (event === 'SIGNED_OUT') {
         resetAnalytics();
       }
