@@ -1,4 +1,6 @@
 import { Image } from 'expo-image';
+
+import { photoSource } from '@/features/photos/api';
 import { Text, View } from 'react-native';
 
 type Props = { url?: string | null; name: string; size?: number };
@@ -10,7 +12,7 @@ export function Avatar({ url, name, size = 56 }: Props) {
       style={{ width: size, height: size, borderRadius: size / 2 }}
       className="items-center justify-center overflow-hidden bg-brand-100">
       {url ? (
-        <Image source={{ uri: url }} style={{ width: size, height: size }} contentFit="cover" />
+        <Image source={photoSource(url)} transition={150} style={{ width: size, height: size }} contentFit="cover" />
       ) : (
         <Text style={{ fontSize: size * 0.4 }} className="font-semibold text-brand-600">
           {name.slice(0, 1)}

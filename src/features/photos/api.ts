@@ -45,6 +45,15 @@ export function moderationMessage(reason: string | null | undefined): string {
 }
 
 /**
+ * expo-image 에 넘길 사진 소스.
+ * Signed URL 은 받을 때마다 뒤의 토큰이 바뀌어서, 그대로 쓰면 같은 사진을 매번 새로 내려받습니다.
+ * 토큰을 뺀 주소를 캐시 키로 지정해 한 번 받은 사진은 기기에 저장된 것을 바로 보여줍니다.
+ */
+export function photoSource(url: string) {
+  return { uri: url, cacheKey: url.split('?')[0] };
+}
+
+/**
  * 비공개 버킷의 사진 경로들을 1시간짜리 Signed URL 로 바꿉니다.
  * 파일이 없거나 볼 권한이 없는 경로는 결과에서 빠집니다.
  */

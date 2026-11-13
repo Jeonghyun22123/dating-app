@@ -1,11 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
-import { Chip } from '@/components/ui/chip';
-import { ErrorText, Screen } from '@/components/ui/screen';
 import {
   DISTANCE_OPTIONS,
   removeFromDiscover,
@@ -15,101 +16,205 @@ import {
   type DistanceKm,
 } from '@/features/discover/api';
 import { SlideCard, type SlideCardHandle } from '@/features/discover/slide-card';
+import { photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
 import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 
-function ProfileCard({
-  profile,
-  myHobbies,
-  onOpenSafety,
+const MAX_HOBBIES = 5;
+/** 사진 위 글자가 밝은 배경에서도 읽히도록 옅은 그림자를 줍니다. */
+const shadow = { textShadowColor: 'rgba(0,0,0,0.45)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 };
+
+/** 거리 범위 선택. 사진 위(onPhoto)와 빈 화면 양쪽에서 씁니다. */
+function DistanceChips({
+  value,
+  onChange,
+  onPhoto,
 }: {
+  value: DistanceKm;
+  onChange: (km: DistanceKm) => void;
+  onPhoto?: boolean;
+}) {
+  return (
+    <View className="flex-row gap-1.5">
+      {DISTANCE_OPTIONS.map((km) => {
+        const selected = value === km;
+        const container = selected
+          ? onPhoto
+            ? 'bg-white'
+            : 'bg-brand-500'
+          : onPhoto
+            ? 'bg-black/35'
+            : 'border border-neutral-300 bg-white';
+        const label = selected
+          ? onPhoto
+            ? 'font-semibold text-neutral-900'
+            : 'font-semibold text-white'
+          : onPhoto
+            ? 'text-white'
+            : 'text-neutral-700';
+        return (
+          <Pressable
+            key={km}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: selected }}
+            accessibilityLabel={`${km}km 이내`}
+            hitSlop={4}
+            onPress={() => onChange(km)}
+            className={`rounded-full px-3 py-1.5 ${container}`}>
+            <Text className={`text-sm ${label}`}>{km}km</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+type CardProps = {
   profile: DiscoverProfile;
   myHobbies: string[];
+  maxKm: DistanceKm;
+  onChangeKm: (km: DistanceKm) => void;
   onOpenSafety: () => void;
-}) {
+  onPass: () => void;
+  onLike: () => void;
+  disabled?: boolean;
+};
+
+/**
+ * 화면을 꽉 채우는 프로필 카드. 사진이 배경이고 모든 정보와 버튼이 사진 위에 올라갑니다.
+ * (세로 스크롤 없음 — 소개글은 3줄, 취미는 5개까지만 보여줍니다)
+ */
+function ProfileCard({ profile, myHobbies, maxKm, onChangeKm, onOpenSafety, onPass, onLike, disabled }: CardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const photos = profile.photoUrls;
-  const purpose = PURPOSES.find((item) => item.value === profile.purpose)?.label;
   const index = Math.min(photoIndex, Math.max(photos.length - 1, 0));
+  const purpose = PURPOSES.find((item) => item.value === profile.purpose)?.label;
+  // 나와 겹치는 취미를 앞에 보여줍니다.
+  const hobbies = [...profile.hobbies].sort((a, b) => Number(myHobbies.includes(b)) - Number(myHobbies.includes(a)));
+  const hidden = hobbies.length - MAX_HOBBIES;
 
   return (
-    <View className="overflow-hidden rounded-3xl bg-white">
-      <View className="aspect-[4/5] w-full bg-brand-100">
+    <View className="flex-1 overflow-hidden rounded-3xl bg-brand-100">
+      {/* 배경 사진. 사진이 마우스·터치를 직접 받으면 웹 브라우저가 "이미지 끌어다 놓기"로
+          가로채서 카드 밀기가 안 되므로 pointerEvents 를 끕니다. */}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         {photos.length > 0 ? (
-          // 사진이 마우스·터치를 직접 받지 않게 합니다. 그대로 두면 웹 브라우저가 사진을
-          // "이미지 끌어다 놓기"로 가로채서 카드 밀기가 동작하지 않습니다.
-          <View pointerEvents="none" style={{ flex: 1 }}>
-            <Image source={{ uri: photos[index] }} style={{ flex: 1 }} contentFit="cover" />
-          </View>
+          <Image source={photoSource(photos[index])} style={{ flex: 1 }} contentFit="cover" transition={150} />
         ) : (
-          <View className="flex-1 items-center justify-center">
-            <Text className="text-8xl font-bold text-brand-300">{profile.nickname.slice(0, 1)}</Text>
+          <View className="flex-1 items-center justify-center pb-40">
+            <Text className="text-9xl font-bold text-brand-300">{profile.nickname.slice(0, 1)}</Text>
           </View>
         )}
-
-        {photos.length > 1 ? (
-          <>
-            {/* 사진 좌우 영역을 눌러 이전/다음 사진으로 이동 */}
-            <View className="absolute inset-0 flex-row">
-              <Pressable
-                accessibilityLabel="이전 사진"
-                className="flex-1"
-                onPress={() => setPhotoIndex(Math.max(index - 1, 0))}
-              />
-              <Pressable
-                accessibilityLabel="다음 사진"
-                className="flex-1"
-                onPress={() => setPhotoIndex(Math.min(index + 1, photos.length - 1))}
-              />
-            </View>
-            <View className="absolute left-3 right-3 top-3 flex-row gap-1">
-              {photos.map((url, i) => (
-                <View key={url} className={`h-1 flex-1 rounded-full ${i === index ? 'bg-white' : 'bg-white/40'}`} />
-              ))}
-            </View>
-          </>
-        ) : null}
       </View>
 
-      <View className="gap-3 p-5">
-        <View className="flex-row items-start justify-between gap-3">
-          <View className="flex-1 gap-1">
-            <Text className="text-2xl font-bold text-neutral-900">
-              {profile.nickname}, {profile.age}
-            </Text>
-            <Text className="text-base text-neutral-600">
-              {profile.neighborhood_name} · 약 {profile.distance_km}km
-            </Text>
+      {/* 사진 좌우를 눌러 이전/다음 사진으로 이동 */}
+      {photos.length > 1 ? (
+        <View className="absolute inset-0 flex-row">
+          <Pressable accessibilityLabel="이전 사진" className="flex-1" onPress={() => setPhotoIndex(Math.max(index - 1, 0))} />
+          <Pressable
+            accessibilityLabel="다음 사진"
+            className="flex-1"
+            onPress={() => setPhotoIndex(Math.min(index + 1, photos.length - 1))}
+          />
+        </View>
+      ) : null}
+
+      {/* 위쪽: 사진 위치 표시, 거리 범위, 신고·차단 */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)']}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 110 }}
+      />
+      <View pointerEvents="box-none" className="absolute left-0 right-0 top-0 gap-3 p-3">
+        {photos.length > 1 ? (
+          <View pointerEvents="none" className="flex-row gap-1">
+            {photos.map((url, i) => (
+              <View key={url} className={`h-1 flex-1 rounded-full ${i === index ? 'bg-white' : 'bg-white/40'}`} />
+            ))}
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="신고 또는 차단" hitSlop={8} onPress={onOpenSafety}>
-            <Text className="text-sm text-neutral-400">신고·차단</Text>
+        ) : null}
+        <View pointerEvents="box-none" className="flex-row items-center justify-between">
+          <DistanceChips value={maxKm} onChange={onChangeKm} onPhoto />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="신고 또는 차단"
+            hitSlop={8}
+            onPress={onOpenSafety}
+            className="h-9 w-9 items-center justify-center rounded-full bg-black/35">
+            <Ionicons name="ellipsis-horizontal" size={18} color="#ffffff" />
           </Pressable>
         </View>
+      </View>
 
-        <View className="flex-row flex-wrap gap-2">
-          <View className="rounded-full bg-neutral-900 px-3 py-1">
-            <Text className="text-sm font-medium text-white">{purpose}</Text>
+      {/* 아래쪽: 프로필 정보와 버튼 */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.88)']}
+        locations={[0, 0.45, 1]}
+        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '62%' }}
+      />
+      <View pointerEvents="box-none" className="absolute bottom-0 left-0 right-0 gap-2.5 p-4">
+        <View pointerEvents="none" className="gap-2.5">
+          <View className="flex-row flex-wrap items-center gap-2">
+            <Text style={shadow} className="text-3xl font-bold text-white">
+              {profile.nickname}, {profile.age}
+            </Text>
+            {profile.verification_status === 'approved' ? (
+              <View className="flex-row items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1">
+                <Ionicons name="checkmark-circle" size={14} color="#ffffff" />
+                <Text className="text-xs font-semibold text-white">본인 인증</Text>
+              </View>
+            ) : null}
           </View>
-          {profile.verification_status === 'approved' ? (
-            <View className="rounded-full bg-emerald-50 px-3 py-1">
-              <Text className="text-sm font-medium text-emerald-700">본인 인증</Text>
-            </View>
+
+          <Text style={shadow} className="text-base text-white">
+            {profile.neighborhood_name} · 약 {profile.distance_km}km · {purpose}
+          </Text>
+
+          {profile.bio ? (
+            <Text style={shadow} numberOfLines={3} className="text-base leading-6 text-white/95">
+              {profile.bio}
+            </Text>
           ) : null}
+
+          <View className="flex-row flex-wrap gap-1.5">
+            {hobbies.slice(0, MAX_HOBBIES).map((hobby) => {
+              const shared = myHobbies.includes(hobby);
+              return (
+                <View key={hobby} className={`rounded-full px-3 py-1 ${shared ? 'bg-brand-500' : 'bg-white/25'}`}>
+                  <Text className={`text-sm text-white ${shared ? 'font-semibold' : ''}`}>{hobby}</Text>
+                </View>
+              );
+            })}
+            {hidden > 0 ? (
+              <View className="rounded-full bg-white/25 px-3 py-1">
+                <Text className="text-sm text-white">+{hidden}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
 
-        {profile.bio ? <Text className="text-base leading-6 text-neutral-800">{profile.bio}</Text> : null}
-
-        <View className="flex-row flex-wrap gap-2">
-          {profile.hobbies.map((hobby) => {
-            const shared = myHobbies.includes(hobby);
-            return (
-              <View key={hobby} className={`rounded-full px-3 py-1 ${shared ? 'bg-brand-500' : 'bg-brand-50'}`}>
-                <Text className={`text-sm ${shared ? 'font-semibold text-white' : 'text-brand-700'}`}>{hobby}</Text>
-              </View>
-            );
-          })}
+        <View className="mt-1 flex-row gap-3">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="다음에"
+            disabled={disabled}
+            onPress={onPass}
+            className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-white/95 active:bg-white/80 ${disabled ? 'opacity-50' : ''}`}>
+            <Ionicons name="close" size={20} color="#404040" />
+            <Text className="text-base font-semibold text-neutral-800">다음에</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="관심 있어요"
+            disabled={disabled}
+            onPress={onLike}
+            className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-brand-500 active:bg-brand-600 ${disabled ? 'opacity-50' : ''}`}>
+            <Ionicons name="heart" size={20} color="#ffffff" />
+            <Text className="text-base font-semibold text-white">관심 있어요</Text>
+          </Pressable>
         </View>
       </View>
     </View>
@@ -125,10 +230,11 @@ export default function DiscoverScreen() {
   const [error, setError] = useState<string | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
   const [matched, setMatched] = useState<{ matchId: string; nickname: string } | null>(null);
+  const cardRef = useRef<SlideCardHandle>(null);
 
   const current = discover.data?.[0];
   const next = discover.data?.[1];
-  const cardRef = useRef<SlideCardHandle>(null);
+  const myHobbies = me?.hobbies ?? [];
 
   /** 반환값: 처리 성공 여부 (실패하면 밀어낸 카드가 제자리로 돌아옵니다) */
   async function handleSwipe(action: 'like' | 'pass'): Promise<boolean> {
@@ -152,69 +258,82 @@ export default function DiscoverScreen() {
     }
   }
 
-  return (
-    <Screen
-      title="둘러보기"
-      footer={
-        current ? (
-          <>
-            <ErrorText>{error}</ErrorText>
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Button title="다음에" variant="secondary" onPress={() => cardRef.current?.decide('pass')} disabled={busy} />
-              </View>
-              <View className="flex-1">
-                <Button title="관심 있어요" onPress={() => cardRef.current?.decide('like')} disabled={busy} />
-              </View>
-            </View>
-          </>
-        ) : undefined
-      }>
-      <View className="flex-row gap-2">
-        {DISTANCE_OPTIONS.map((km) => (
-          <Chip key={km} label={`${km}km 이내`} selected={maxKm === km} onPress={() => setMaxKm(km)} />
-        ))}
-      </View>
+  const noop = () => {};
 
-      {discover.isPending ? (
-        <View className="items-center py-24">
-          <ActivityIndicator size="large" color="#f43f5e" />
-        </View>
-      ) : discover.isError ? (
-        <View className="gap-4 py-16">
-          <Text className="text-center text-base text-neutral-600">추천을 불러오지 못했어요.</Text>
-          <Button title="다시 시도" variant="secondary" onPress={() => discover.refetch()} />
-        </View>
-      ) : current ? (
-        // key 를 주어 카드가 바뀔 때 밀린 위치·사진 순서 등 내부 상태를 초기화합니다.
-        <View key={current.id} className="gap-3">
+  return (
+    // 위쪽 안전 영역만 띄웁니다. 아래는 탭 바가 차지합니다.
+    <SafeAreaView edges={['top']} className="flex-1 items-center bg-neutral-50">
+      <View className="w-full max-w-md flex-1 px-2 pb-2 pt-1">
+        {current ? (
+          // key 를 주어 카드가 바뀔 때 밀린 위치·사진 순서 등 내부 상태를 초기화합니다.
           <SlideCard
+            key={current.id}
             ref={cardRef}
             disabled={busy}
             onDecide={handleSwipe}
             behind={
-              next ? <ProfileCard profile={next} myHobbies={me?.hobbies ?? []} onOpenSafety={() => {}} /> : undefined
+              next ? (
+                <ProfileCard
+                  profile={next}
+                  myHobbies={myHobbies}
+                  maxKm={maxKm}
+                  onChangeKm={noop}
+                  onOpenSafety={noop}
+                  onPass={noop}
+                  onLike={noop}
+                />
+              ) : undefined
             }>
-            <ProfileCard profile={current} myHobbies={me?.hobbies ?? []} onOpenSafety={() => setSafetyOpen(true)} />
+            <ProfileCard
+              profile={current}
+              myHobbies={myHobbies}
+              maxKm={maxKm}
+              onChangeKm={setMaxKm}
+              onOpenSafety={() => setSafetyOpen(true)}
+              onPass={() => cardRef.current?.decide('pass')}
+              onLike={() => cardRef.current?.decide('like')}
+              disabled={busy}
+            />
           </SlideCard>
-          <Text className="text-center text-sm text-neutral-400">
-            카드를 오른쪽으로 밀면 관심 있어요, 왼쪽으로 밀면 다음에
-          </Text>
-        </View>
-      ) : (
-        <View className="gap-4 py-16">
-          <Text className="text-center text-xl font-bold text-neutral-900">근처의 새로운 사람을 모두 봤어요</Text>
-          <Text className="text-center text-base leading-6 text-neutral-600">
-            거리 범위를 넓히거나 잠시 후 다시 확인해 보세요.
-          </Text>
-          <Button
-            title="새로고침"
-            variant="secondary"
-            onPress={() => discover.refetch()}
-            loading={discover.isRefetching}
-          />
-        </View>
-      )}
+        ) : (
+          <View className="flex-1 items-center justify-center gap-5 px-6">
+            {discover.isPending ? (
+              <ActivityIndicator size="large" color="#f43f5e" />
+            ) : discover.isError ? (
+              <>
+                <Text className="text-center text-base text-neutral-600">추천을 불러오지 못했어요.</Text>
+                <View className="w-full">
+                  <Button title="다시 시도" variant="secondary" onPress={() => discover.refetch()} />
+                </View>
+              </>
+            ) : (
+              <>
+                <Text className="text-center text-xl font-bold text-neutral-900">근처의 새로운 사람을 모두 봤어요</Text>
+                <Text className="text-center text-base leading-6 text-neutral-600">
+                  거리 범위를 넓히거나 잠시 후 다시 확인해 보세요.
+                </Text>
+                <DistanceChips value={maxKm} onChange={setMaxKm} />
+                <View className="w-full">
+                  <Button
+                    title="새로고침"
+                    variant="secondary"
+                    onPress={() => discover.refetch()}
+                    loading={discover.isRefetching}
+                  />
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
+        {error ? (
+          <View pointerEvents="none" className="absolute left-4 right-4 top-16 items-center">
+            <View className="rounded-full bg-red-600 px-4 py-2">
+              <Text className="text-sm font-semibold text-white">{error}</Text>
+            </View>
+          </View>
+        ) : null}
+      </View>
 
       {me && current ? (
         <SafetySheet
@@ -245,6 +364,6 @@ export default function DiscoverScreen() {
           </View>
         </View>
       </Modal>
-    </Screen>
+    </SafeAreaView>
   );
 }

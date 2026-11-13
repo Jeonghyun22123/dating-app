@@ -12,13 +12,14 @@ import {
   uploadProfilePhoto,
   useMyPhotos,
   type PhotoWithUrl,
+  photoSource,
 } from '@/features/photos/api';
 
 function PhotoTile({ photo, onDelete }: { photo: PhotoWithUrl; onDelete: () => void }) {
   const pending = photo.moderation_status === 'pending';
   return (
     <View className="aspect-[4/5] w-[31%] overflow-hidden rounded-2xl bg-neutral-200">
-      {photo.url ? <Image source={{ uri: photo.url }} style={{ flex: 1 }} contentFit="cover" /> : null}
+      {photo.url ? <Image source={photoSource(photo.url)} transition={150} style={{ flex: 1 }} contentFit="cover" /> : null}
       {pending ? (
         <View className="absolute bottom-0 left-0 right-0 bg-black/60 py-1">
           <Text className="text-center text-xs text-white">검수 대기</Text>

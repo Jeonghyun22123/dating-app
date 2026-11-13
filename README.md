@@ -66,6 +66,7 @@ SUPABASE_SERVICE_ROLE_KEY=여기에_키 node scripts/seed-photos.mjs
 ```
 
    직접 고른 사진을 쓰려면 `seed-photos/1.jpg` ~ `8.jpg` (여러 장은 `1-1.jpg`, `1-2.jpg`) 로 넣고 실행합니다.
+4. (선택) 가짜 프로필을 모두 넘겨서 둘러보기가 비었다면 [`supabase_seed_reset.sql`](./supabase_seed_reset.sql) 을 실행해 처음 상태로 되돌립니다 (사진은 유지).
 
 ### Phase 4 (관리자 페이지)
 
@@ -113,6 +114,8 @@ supabase_phase2.sql           Phase 2 스키마 + Storage
 supabase_phase3.sql           Phase 3 추천·매칭·채팅 함수
 supabase_phase4.sql           Phase 4 관리자 함수 + 작업 기록
 supabase_seed_test_users.sql  개발용 가짜 프로필
+supabase_seed_reset.sql       개발용: 가짜 프로필 테스트 기록 초기화
+scripts/seed-photos.mjs       개발용: 가짜 프로필에 사진 넣기
 ```
 
 ## 새 패키지 추가 시

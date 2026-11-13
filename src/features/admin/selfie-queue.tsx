@@ -1,4 +1,6 @@
 import { Image } from 'expo-image';
+
+import { photoSource } from '@/features/photos/api';
 import { Text, View } from 'react-native';
 
 import { formatDateTime, GENDER_LABEL, reviewSelfie, useSelfieQueue, type SelfieReviewItem } from './api';
@@ -23,7 +25,7 @@ function ReviewCard({ item }: { item: SelfieReviewItem }) {
           <Text className="text-xs font-semibold text-neutral-500">방금 찍은 셀카</Text>
           <View className="aspect-[3/4] overflow-hidden rounded-xl bg-neutral-200">
             {item.selfieUrl ? (
-              <Image source={{ uri: item.selfieUrl }} style={{ flex: 1 }} contentFit="cover" />
+              <Image source={{ uri: item.selfieUrl }} cachePolicy="none" style={{ flex: 1 }} contentFit="cover" />
             ) : (
               <View className="flex-1 items-center justify-center px-3">
                 <Text className="text-center text-sm text-neutral-500">셀카 파일이 없어요</Text>
@@ -39,7 +41,7 @@ function ReviewCard({ item }: { item: SelfieReviewItem }) {
                 <View
                   key={url}
                   className={`aspect-[3/4] overflow-hidden rounded-xl bg-neutral-200 ${item.photoUrls.length === 1 ? 'w-full' : 'w-[48%]'}`}>
-                  <Image source={{ uri: url }} style={{ flex: 1 }} contentFit="cover" />
+                  <Image source={photoSource(url)} transition={150} style={{ flex: 1 }} contentFit="cover" />
                 </View>
               ))
             ) : (

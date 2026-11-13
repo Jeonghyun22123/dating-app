@@ -121,32 +121,33 @@ export function SlideCard({ children, behind, disabled, onDecide, ref }: Props) 
   const likeStyle = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [20, DISTANCE], [0, 1], 'clamp') }));
   const passStyle = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [-DISTANCE, -20], [1, 0], 'clamp') }));
 
+  // 카드가 화면에 주어진 영역을 꽉 채우도록 모든 층을 flex: 1 로 둡니다.
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       {behind ? (
         // 맨 위 카드와 같은 영역 안에서만 보이도록 잘라 둡니다 (길이가 달라도 아래로 삐져나오지 않게).
         <View
           pointerEvents="none"
           aria-hidden
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', borderRadius: 24 }}>
-          <Animated.View style={behindStyle}>{behind}</Animated.View>
+          <Animated.View style={[{ flex: 1 }, behindStyle]}>{behind}</Animated.View>
         </View>
       ) : null}
 
       <GestureDetector gesture={pan}>
         {/* userSelect: 끄는 동안 카드의 글자가 선택(파란 블록)되지 않게 합니다 (웹) */}
-        <Animated.View style={[{ userSelect: 'none' }, topStyle]}>
+        <Animated.View style={[{ flex: 1, userSelect: 'none' }, topStyle]}>
           {children}
           {/* 미는 방향에 따라 어떤 결정이 되는지 미리 보여줍니다.
               움직이는 스타일(style)과 Tailwind 클래스를 한 뷰에 섞지 않도록 뷰를 둘로 나눕니다. */}
-          <Animated.View pointerEvents="none" aria-hidden style={[{ position: 'absolute', top: 28, left: 16 }, likeStyle]}>
-            <View className="rounded-full bg-brand-500 px-4 py-2">
-              <Text className="text-base font-bold text-white">관심 있어요</Text>
+          <Animated.View pointerEvents="none" aria-hidden style={[{ position: 'absolute', top: '38%', left: 20 }, likeStyle]}>
+            <View className="rounded-full bg-brand-500 px-5 py-2.5">
+              <Text className="text-lg font-bold text-white">관심 있어요</Text>
             </View>
           </Animated.View>
-          <Animated.View pointerEvents="none" aria-hidden style={[{ position: 'absolute', top: 28, right: 16 }, passStyle]}>
-            <View className="rounded-full bg-neutral-800 px-4 py-2">
-              <Text className="text-base font-bold text-white">다음에</Text>
+          <Animated.View pointerEvents="none" aria-hidden style={[{ position: 'absolute', top: '38%', right: 20 }, passStyle]}>
+            <View className="rounded-full bg-neutral-800 px-5 py-2.5">
+              <Text className="text-lg font-bold text-white">다음에</Text>
             </View>
           </Animated.View>
         </Animated.View>

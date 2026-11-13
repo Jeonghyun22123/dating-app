@@ -5,7 +5,7 @@ import { Text, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { calculateAge } from '@/features/identity/adult-verification';
-import { useMyPhotos } from '@/features/photos/api';
+import { useMyPhotos, photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
 import { signOut } from '@/lib/auth';
@@ -44,7 +44,7 @@ export default function MyProfileScreen() {
       <View className="overflow-hidden rounded-3xl bg-white">
         <View className="aspect-[4/5] w-full bg-neutral-200">
           {mainPhoto?.url ? (
-            <Image source={{ uri: mainPhoto.url }} style={{ flex: 1 }} contentFit="cover" />
+            <Image source={photoSource(mainPhoto.url)} transition={150} style={{ flex: 1 }} contentFit="cover" />
           ) : null}
         </View>
         <View className="gap-3 p-5">
