@@ -38,7 +38,11 @@ function ProfileCard({
     <View className="overflow-hidden rounded-3xl bg-white">
       <View className="aspect-[4/5] w-full bg-brand-100">
         {photos.length > 0 ? (
-          <Image source={{ uri: photos[index] }} style={{ flex: 1 }} contentFit="cover" />
+          // 사진이 마우스·터치를 직접 받지 않게 합니다. 그대로 두면 웹 브라우저가 사진을
+          // "이미지 끌어다 놓기"로 가로채서 카드 밀기가 동작하지 않습니다.
+          <View pointerEvents="none" style={{ flex: 1 }}>
+            <Image source={{ uri: photos[index] }} style={{ flex: 1 }} contentFit="cover" />
+          </View>
         ) : (
           <View className="flex-1 items-center justify-center">
             <Text className="text-8xl font-bold text-brand-300">{profile.nickname.slice(0, 1)}</Text>

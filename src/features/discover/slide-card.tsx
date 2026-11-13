@@ -134,7 +134,8 @@ export function SlideCard({ children, behind, disabled, onDecide, ref }: Props) 
       ) : null}
 
       <GestureDetector gesture={pan}>
-        <Animated.View style={topStyle}>
+        {/* userSelect: 끄는 동안 카드의 글자가 선택(파란 블록)되지 않게 합니다 (웹) */}
+        <Animated.View style={[{ userSelect: 'none' }, topStyle]}>
           {children}
           {/* 미는 방향에 따라 어떤 결정이 되는지 미리 보여줍니다.
               움직이는 스타일(style)과 Tailwind 클래스를 한 뷰에 섞지 않도록 뷰를 둘로 나눕니다. */}

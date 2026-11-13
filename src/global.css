@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 웹: 사진을 잡고 끌 때 브라우저의 기본 "이미지 끌어다 놓기"가 뜨지 않게 합니다. */
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
