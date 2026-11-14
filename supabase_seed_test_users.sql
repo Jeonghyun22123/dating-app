@@ -114,6 +114,23 @@ $$;
 -- where u.email like 'seed-%@seed.invalid' and m.is_active;
 
 -- ---------------------------------------------------------------------
+-- (선택) 시그널 받아보기 — supabase_signal.sql 실행 후 사용
+-- 나에게 아직 관심을 보내지 않은 가짜 프로필(2번, 4번)이 메시지와 함께 시그널을 보냅니다.
+-- 채팅 탭의 "받은 시그널"과 둘러보기 맨 앞 카드에서 확인할 수 있어요.
+-- ---------------------------------------------------------------------
+-- insert into swipes (actor_id, target_id, action, message)
+-- select u.id,
+--        (select p.id from profiles p
+--          where p.id not in (select id from auth.users where email like 'seed-%@seed.invalid')
+--          order by p.created_at desc limit 1),
+--        'signal',
+--        case u.email when 'seed-2@seed.invalid' then '동네 맛집 좋아하신다면 같이 가요!'
+--                     else '프로필 보고 연락드려요. 클라이밍 해보셨어요?' end
+-- from auth.users u
+-- where u.email in ('seed-2@seed.invalid', 'seed-4@seed.invalid')
+-- on conflict (actor_id, target_id) do nothing;
+
+-- ---------------------------------------------------------------------
 -- 정리: 테스트 프로필과 관련 데이터(스와이프, 매칭, 메시지) 전부 삭제
 -- 사진을 넣었다면 먼저 `node scripts/seed-photos.mjs --clean` 으로 Storage 파일을 지운 뒤 실행하세요.
 -- ---------------------------------------------------------------------

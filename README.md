@@ -91,6 +91,11 @@ where id = (select id from auth.users where email = 'you@example.com');
 SQL Editor 에 [`supabase_phase5.sql`](./supabase_phase5.sql) 전체를 붙여넣고 실행합니다. **필수**입니다 —
 실행하지 않으면 앱이 "DB 업데이트가 필요해요" 화면을 보여줍니다. Edge Function 재배포는 필요 없습니다.
 
+### 시그널 (메시지와 함께 보내는 대화 신청)
+
+SQL Editor 에 [`supabase_signal.sql`](./supabase_signal.sql) 전체를 붙여넣고 실행합니다. **필수**입니다 (Phase 5 SQL 다음에 실행).
+받는 쪽을 혼자 테스트하려면 `supabase_seed_test_users.sql` 안의 "시그널 받아보기" 쿼리를 주석 해제해 실행하세요.
+
 ### 설정 화면 (알림 · 화면 테마)
 
 SQL Editor 에 [`supabase_settings.sql`](./supabase_settings.sql) 을 실행하면 알림 수신 설정이 저장됩니다.
@@ -115,6 +120,7 @@ src/
     settings/     알림 수신 설정 저장
     preferences/  만남 조건 (성별 · 나이 · 거리) 입력과 저장
     trust/        내 신뢰 점수 카드
+    signals/      시그널 보내기 · 받은 시그널
   theme/          화면 테마(화이트/다크/블랙 & 핑크) 정의와 적용
   lib/            env, supabase, auth, analytics(PostHog), query-client
   providers/      app-providers.tsx
@@ -128,6 +134,7 @@ supabase_phase2.sql           Phase 2 스키마 + Storage
 supabase_phase3.sql           Phase 3 추천·매칭·채팅 함수
 supabase_phase4.sql           Phase 4 관리자 함수 + 작업 기록
 supabase_phase5.sql           Phase 5 만남 조건 · 신뢰 점수 · 관리자 설정
+supabase_signal.sql           시그널 (횟수, 보내기, 받은 시그널, 수락 · 거절)
 supabase_settings.sql         알림 수신 설정
 supabase_seed_test_users.sql  개발용 가짜 프로필
 supabase_seed_reset.sql       개발용: 가짜 프로필 테스트 기록 초기화

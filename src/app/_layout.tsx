@@ -49,7 +49,7 @@ function RootNavigator() {
     return (
       <Screen
         title="DB 업데이트가 필요해요"
-        subtitle="앱이 새 버전으로 바뀌었는데 데이터베이스가 아직 이전 상태예요. Supabase 대시보드의 SQL Editor 에서 supabase_phase5.sql 을 실행한 뒤 다시 시도해 주세요.">
+        subtitle="앱이 새 버전으로 바뀌었는데 데이터베이스가 아직 이전 상태예요. Supabase 대시보드의 SQL Editor 에서 아직 실행하지 않은 SQL 파일(가장 최근: supabase_signal.sql)을 실행한 뒤 다시 시도해 주세요.">
         <Button title="다시 시도" onPress={() => profile.refetch()} loading={profile.isRefetching} />
         <Button title="로그아웃" variant="ghost" onPress={signOut} />
       </Screen>
