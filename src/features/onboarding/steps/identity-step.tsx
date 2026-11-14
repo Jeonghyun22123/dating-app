@@ -64,6 +64,7 @@ export function IdentityStep({ progress }: { progress: string }) {
                 key={item.value}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
+                aria-checked={selected}
                 onPress={() => setGender(item.value)}
                 className={`h-14 flex-1 items-center justify-center rounded-2xl border ${selected ? 'border-brand-500 bg-brand-50' : 'border-line bg-card'}`}>
                 <Text className={`text-base ${selected ? 'font-semibold text-brand-600' : 'text-muted'}`}>

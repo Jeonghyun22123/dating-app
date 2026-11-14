@@ -5,7 +5,10 @@ import { formatDateTime, GENDER_LABEL, setBanned, useAdminUsers, type AdminUser 
 import { ActionButton, Badge, Card, ListState, useActionError } from './parts';
 import { useThemeColors } from '@/theme/theme-view';
 
-const VERIFICATION: Record<AdminUser['verification_status'], { label: string; tone: 'amber' | 'green' | 'red' }> = {
+const VERIFICATION: Record<
+  AdminUser['verification_status'],
+  { label: string; tone: 'amber' | 'green' | 'red' }
+> = {
   pending: { label: '인증 전', tone: 'amber' },
   approved: { label: '인증 완료', tone: 'green' },
   rejected: { label: '인증 반려', tone: 'red' },
@@ -24,6 +27,10 @@ function UserCard({ user }: { user: AdminUser }) {
         </Text>
         {user.role === 'admin' ? <Badge label="관리자" tone="neutral" /> : null}
         <Badge label={verification.label} tone={verification.tone} />
+        <Badge
+          label={`신뢰 ${Number(user.trust_score).toFixed(1)}`}
+          tone={user.trust_score >= 3 ? 'green' : 'neutral'}
+        />
         {user.is_banned ? <Badge label="정지됨" tone="red" /> : null}
         {user.report_count > 0 ? (
           <Badge label={`신고 ${user.report_count}건`} tone={user.report_count >= 3 ? 'red' : 'neutral'} />

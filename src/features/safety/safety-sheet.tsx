@@ -102,6 +102,7 @@ export function SafetySheet({ visible, onClose, myId, target, matchId, onUnmatch
                     key={item.value}
                     accessibilityRole="radio"
                     accessibilityState={{ checked: selected }}
+                    aria-checked={selected}
                     onPress={() => setReason(item.value)}
                     className={`rounded-2xl border px-4 py-3 ${selected ? 'border-brand-500 bg-brand-50' : 'border-line bg-card'}`}>
                     <Text className={`text-base ${selected ? 'font-semibold text-brand-600' : 'text-fg'}`}>

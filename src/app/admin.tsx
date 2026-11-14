@@ -7,9 +7,10 @@ import { useAdminStats } from '@/features/admin/api';
 import { Dashboard } from '@/features/admin/dashboard';
 import { Reports } from '@/features/admin/reports';
 import { SelfieQueue } from '@/features/admin/selfie-queue';
+import { AdminSettingsSection } from '@/features/admin/settings';
 import { Users } from '@/features/admin/users';
 
-type Section = 'dashboard' | 'selfies' | 'reports' | 'users';
+type Section = 'dashboard' | 'selfies' | 'reports' | 'users' | 'settings';
 
 /**
  * 관리자 페이지 (/admin).
@@ -26,6 +27,7 @@ export default function AdminScreen() {
     { value: 'selfies', label: '셀카 심사', count: stats?.selfies_pending },
     { value: 'reports', label: '신고', count: stats?.reports_pending },
     { value: 'users', label: '회원' },
+    { value: 'settings', label: '설정' },
   ];
 
   return (
@@ -48,6 +50,7 @@ export default function AdminScreen() {
                   key={tab.value}
                   accessibilityRole="tab"
                   accessibilityState={{ selected }}
+                  aria-selected={selected}
                   onPress={() => setSection(tab.value)}
                   className={`flex-row items-center gap-1.5 border-b-2 px-3 py-2.5 ${selected ? 'border-brand-500' : 'border-transparent'}`}>
                   <Text className={`text-sm font-semibold ${selected ? 'text-brand-600' : 'text-muted'}`}>
@@ -71,6 +74,7 @@ export default function AdminScreen() {
           {section === 'selfies' ? <SelfieQueue /> : null}
           {section === 'reports' ? <Reports /> : null}
           {section === 'users' ? <Users /> : null}
+          {section === 'settings' ? <AdminSettingsSection /> : null}
         </View>
       </ScrollView>
     </SafeAreaView>

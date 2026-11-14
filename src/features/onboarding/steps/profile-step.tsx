@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { ErrorText, Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
+import { defaultPreferences } from '@/features/preferences/api';
+import { PreferencesForm } from '@/features/preferences/preferences-form';
 import { createProfile, refreshMyProfile } from '@/features/profile/api';
 import { HOBBY_TAGS, LIMITS, PURPOSES } from '@/features/profile/constants';
 import { AnalyticsEvent, track } from '@/lib/analytics';
@@ -17,6 +19,8 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
   const [purpose, setPurpose] = useState<Purpose | null>(null);
   const [hobbies, setHobbies] = useState<string[]>([]);
   const [bio, setBio] = useState('');
+  // 나이 기본값(내 나이 ±5세)은 앞 단계에서 입력한 생년월일로 정합니다.
+  const [prefs, setPrefs] = useState(() => defaultPreferences(identity?.birthDate ?? '2000-01-01'));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -34,11 +38,13 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
     }
     if (!purpose) return setError('만남 목적을 선택해 주세요.');
     if (hobbies.length === 0) return setError('취미를 1개 이상 선택해 주세요.');
+    const prefGender = prefs.gender;
+    if (!prefGender) return setError('만나고 싶은 성별을 선택해 주세요.');
 
     setError(null);
     setSaving(true);
     try {
-      await createProfile(userId, identity, { nickname: name, purpose, hobbies, bio });
+      await createProfile(userId, identity, { nickname: name, purpose, hobbies, bio }, { ...prefs, gender: prefGender });
       track(AnalyticsEvent.ProfileCompleted, { purpose, hobby_count: hobbies.length });
       await refreshMyProfile(userId);
     } catch (e) {
@@ -82,6 +88,7 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
               key={item.value}
               accessibilityRole="radio"
               accessibilityState={{ checked: selected }}
+              aria-checked={selected}
               onPress={() => setPurpose(item.value)}
               className={`rounded-2xl border px-4 py-3 ${selected ? 'border-brand-500 bg-brand-50' : 'border-line bg-card'}`}>
               <Text className={`text-base font-semibold ${selected ? 'text-brand-600' : 'text-fg'}`}>
@@ -122,6 +129,14 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
         maxLength={LIMITS.bioMax}
         hint={`${bio.length}/${LIMITS.bioMax}`}
       />
+
+      <View className="gap-4 border-t border-line pt-6">
+        <View className="gap-1">
+          <Text className="text-xl font-bold text-fg">만나고 싶은 사람</Text>
+          <Text className="text-sm text-muted">나중에 설정에서 언제든 바꿀 수 있어요.</Text>
+        </View>
+        <PreferencesForm value={prefs} onChange={setPrefs} />
+      </View>
     </Screen>
   );
 }

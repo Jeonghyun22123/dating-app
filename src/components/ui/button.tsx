@@ -27,6 +27,8 @@ export function Button({ title, onPress, variant = 'primary', loading, disabled 
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
+      aria-disabled={!!inactive}
+      aria-busy={!!loading}
       disabled={inactive}
       onPress={onPress}
       className={`h-14 flex-row items-center justify-center rounded-2xl px-5 ${container[variant]} ${inactive ? 'opacity-50' : ''}`}>

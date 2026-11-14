@@ -110,6 +110,8 @@ export function ActionButton({ title, onPress, tone = 'plain', confirm, disabled
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled || busy, busy }}
+      aria-disabled={!!disabled || busy}
+      aria-busy={busy}
       disabled={disabled || busy}
       onPress={handlePress}
       className={`h-10 items-center justify-center rounded-xl px-4 ${container} ${disabled || busy ? 'opacity-50' : ''}`}>

@@ -5,8 +5,8 @@ import { queryClient } from '@/lib/query-client';
 import { supabase } from '@/lib/supabase';
 import type { Gender, Purpose, VerificationStatus } from '@/types/db';
 
-export const DISTANCE_OPTIONS = [10, 30, 100] as const;
-export type DistanceKm = (typeof DISTANCE_OPTIONS)[number];
+/** 다른 사용자에게 보여주는 신뢰 등급 (점수 숫자는 서버가 내려주지 않습니다) */
+export type TrustLevel = 'high' | 'verified' | null;
 
 export type DiscoverProfile = {
   id: string;
@@ -18,6 +18,7 @@ export type DiscoverProfile = {
   bio: string | null;
   neighborhood_name: string | null;
   verification_status: VerificationStatus;
+  trust_level: TrustLevel;
   /** 서버가 계산한 근사 거리. 정확한 좌표는 앱으로 오지 않습니다. */
   distance_km: number;
   photo_paths: string[] | null;
@@ -31,11 +32,12 @@ export type DiscoverResult = {
   profiles: DiscoverProfile[];
 };
 
-export const discoverKey = (maxKm: number) => ['discover', maxKm] as const;
+export const discoverKey = ['discover'] as const;
 
-export async function fetchDiscover(maxKm: number): Promise<DiscoverResult> {
+/** 거리·성별·나이 조건은 서버가 내 프로필의 만남 조건으로 적용합니다. */
+export async function fetchDiscover(): Promise<DiscoverResult> {
   const startedAt = Date.now();
-  const { data, error } = await supabase.rpc('discover_profiles', { p_max_km: maxKm, p_limit: 20 });
+  const { data, error } = await supabase.rpc('discover_profiles', { p_limit: 20 });
   if (error) throw error;
 
   const rows = (data ?? []) as Omit<DiscoverProfile, 'photoUrls'>[];
@@ -49,8 +51,8 @@ export async function fetchDiscover(maxKm: number): Promise<DiscoverResult> {
   };
 }
 
-export function useDiscover(maxKm: number) {
-  return useQuery({ queryKey: discoverKey(maxKm), queryFn: () => fetchDiscover(maxKm) });
+export function useDiscover() {
+  return useQuery({ queryKey: discoverKey, queryFn: fetchDiscover });
 }
 
 /** 좋아요/패스. 서로 좋아요면 매칭 id 를 돌려줍니다. */
@@ -62,5 +64,5 @@ export async function swipeProfile(targetId: string, action: 'like' | 'pass'): P
 
 /** 추천 목록을 서버에서 다시 받아옵니다. */
 export function refreshDiscover() {
-  return queryClient.invalidateQueries({ queryKey: ['discover'] });
+  return queryClient.invalidateQueries({ queryKey: discoverKey });
 }

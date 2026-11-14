@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 테스트용 가짜 프로필 8명 만들기 (개발 전용 — 실제 서비스 DB 에서는 실행하지 마세요)
 --
--- 선행 조건: 앱에서 내 계정으로 가입 + 온보딩을 끝낸 상태여야 합니다.
+-- 선행 조건: supabase_phase5.sql 까지 실행했고, 앱에서 내 계정으로 가입 + 온보딩을 끝낸 상태여야 합니다.
 -- 사용법: Supabase 대시보드 > SQL Editor 에 전체를 붙여넣고 실행.
 --
 -- 동작
@@ -76,7 +76,8 @@ begin
     insert into profiles (
       id, nickname, gender, birth_date, purpose, hobbies, bio,
       location, neighborhood_name, verification_status,
-      selfie_submitted_at, onboarding_completed_at
+      selfie_submitted_at, onboarding_completed_at,
+      pref_genders, pref_age_min, pref_age_max, pref_distance_km
     ) values (
       uid, nicknames[i], genders[i],
       (current_date - make_interval(years => 24 + i, days => i * 17))::date,
@@ -85,7 +86,9 @@ begin
       st_project(base, 300 + random() * 4200, radians(random() * 360)),
       towns[i],
       case when i % 2 = 0 then 'approved' else 'pending' end,
-      now(), now()
+      now(), now(),
+      -- 테스트하기 쉽도록 가짜 프로필은 조건을 가장 넓게 둡니다 (누구에게나 추천됨).
+      array['male', 'female'], 19, 60, 500
     );
 
     -- 추천 목록은 '승인된 사진이 있는 사람'만 보여주므로 기록만 넣어 둡니다 (실제 파일 없음).

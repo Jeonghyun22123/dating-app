@@ -7,6 +7,8 @@ export function Chip({ label, selected, onPress, disabled }: Props) {
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked: selected, disabled: !!disabled }}
+      aria-checked={selected}
+      aria-disabled={!!disabled}
       disabled={disabled}
       onPress={onPress}
       className={`rounded-full border px-4 py-2 ${selected ? 'border-brand-500 bg-brand-500' : 'border-line bg-card'} ${disabled ? 'opacity-40' : ''}`}>

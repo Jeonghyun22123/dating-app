@@ -34,13 +34,27 @@ function RootNavigator() {
       <Screen
         title="Supabase 설정이 필요해요"
         subtitle=".env.example 을 .env.local 로 복사해 Supabase URL 과 anon 키를 채운 뒤 개발 서버를 다시 시작하세요.">
-        <Text className="text-sm text-muted">배포 환경이라면 호스팅 서비스의 환경변수에 같은 값을 등록하세요.</Text>
+        <Text className="text-sm text-muted">
+          배포 환경이라면 호스팅 서비스의 환경변수에 같은 값을 등록하세요.
+        </Text>
       </Screen>
     );
   }
 
   // 저장된 테마를 읽기 전에 그리면 잠깐 다른 색이 보이므로 기다립니다.
   if (!themeReady || !isReady || (session && profile.isPending)) return <LoadingScreen />;
+
+  // 앱이 기대하는 컬럼이 DB 에 없으면(42703) 마이그레이션 SQL 을 아직 실행하지 않은 것입니다.
+  if (session && profile.isError && (profile.error as { code?: string } | null)?.code === '42703') {
+    return (
+      <Screen
+        title="DB 업데이트가 필요해요"
+        subtitle="앱이 새 버전으로 바뀌었는데 데이터베이스가 아직 이전 상태예요. Supabase 대시보드의 SQL Editor 에서 supabase_phase5.sql 을 실행한 뒤 다시 시도해 주세요.">
+        <Button title="다시 시도" onPress={() => profile.refetch()} loading={profile.isRefetching} />
+        <Button title="로그아웃" variant="ghost" onPress={signOut} />
+      </Screen>
+    );
+  }
 
   if (session && profile.isError) {
     return (

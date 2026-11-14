@@ -12,11 +12,14 @@ import {
   useNotificationPrefs,
   type NotificationPrefs,
 } from '@/features/settings/api';
+import { formatAgeRange, GENDER_CHOICES, preferencesFromProfile } from '@/features/preferences/api';
+import { useMyProfile } from '@/features/profile/api';
 import { signOut } from '@/lib/auth';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeStore } from '@/stores/theme-store';
 import { useThemeColors } from '@/theme/theme-view';
 import { hex, THEMES, type Theme } from '@/theme/themes';
+import type { Profile } from '@/types/db';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -34,6 +37,7 @@ function ThemeOption({ theme, selected, onPress }: { theme: Theme; selected: boo
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ checked: selected }}
+      aria-checked={selected}
       accessibilityLabel={`${theme.label} 테마`}
       onPress={onPress}
       className="flex-row items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 active:bg-field">
@@ -114,6 +118,13 @@ function NotificationSection({ userId }: { userId: string }) {
   );
 }
 
+/** 설정 목록에 보여줄 현재 조건 요약 (예: "여성 · 25세 ~ 35세 · 30km 이내") */
+function summarize(profile: Profile) {
+  const prefs = preferencesFromProfile(profile);
+  const gender = GENDER_CHOICES.find((choice) => choice.value === prefs.gender)?.label ?? '성별 미설정';
+  return `${gender} · ${formatAgeRange(prefs.ageMin, prefs.ageMax)} · ${prefs.distanceKm}km 이내`;
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const colors = useThemeColors();
@@ -121,6 +132,7 @@ export default function SettingsScreen() {
   const email = useAuthStore((s) => s.session?.user.email);
   const { themeId, setTheme } = useThemeStore();
   const version = Constants.expoConfig?.version ?? '';
+  const { data: profile } = useMyProfile();
 
   return (
     <Screen>
@@ -134,6 +146,22 @@ export default function SettingsScreen() {
         </Pressable>
         <Text className="text-3xl font-bold text-fg">설정</Text>
       </View>
+
+      {profile ? (
+        <Section title="만남">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="만남 조건"
+            onPress={() => router.push('/preferences')}
+            className="flex-row items-center gap-3 px-4 py-3 active:bg-field">
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-fg">만남 조건</Text>
+              <Text className="text-sm text-muted">{summarize(profile)}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
+          </Pressable>
+        </Section>
+      ) : null}
 
       <Section title="화면 테마">
         {THEMES.map((theme) => (

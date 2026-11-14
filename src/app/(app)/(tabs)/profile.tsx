@@ -9,6 +9,7 @@ import { calculateAge } from '@/features/identity/adult-verification';
 import { useMyPhotos, photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
+import { TrustCard } from '@/features/trust/trust-card';
 import { signOut } from '@/lib/auth';
 import { useThemeColors } from '@/theme/theme-view';
 
@@ -85,6 +86,7 @@ export default function MyProfileScreen() {
           </View>
         </View>
       </View>
+      <TrustCard userId={profile.id} />
     </Screen>
   );
 }

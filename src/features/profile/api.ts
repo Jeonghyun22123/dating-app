@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import type { IdentityResult } from '@/features/identity/identity-provider';
+import { toColumns, type GenderChoice, type MatchPreferences } from '@/features/preferences/api';
 import { queryClient } from '@/lib/query-client';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
@@ -39,7 +40,12 @@ export type ProfileDetails = {
   bio: string;
 };
 
-export async function createProfile(userId: string, identity: IdentityResult, details: ProfileDetails) {
+export async function createProfile(
+  userId: string,
+  identity: IdentityResult,
+  details: ProfileDetails,
+  prefs: MatchPreferences & { gender: GenderChoice },
+) {
   const { error } = await supabase.from('profiles').insert({
     id: userId,
     // PortOne 도입 후에는 아래 두 값을 서버가 인증 결과로 기록합니다 (identity-provider.ts 참고).
@@ -49,6 +55,7 @@ export async function createProfile(userId: string, identity: IdentityResult, de
     purpose: details.purpose,
     hobbies: details.hobbies,
     bio: details.bio.trim() || null,
+    ...toColumns(prefs),
   });
   if (error) throw error;
   refreshEmbedding();

@@ -63,6 +63,8 @@ export type AdminUser = {
   created_at: string;
   last_active_at: string | null;
   report_count: number;
+  /** 신뢰 점수 (0.0 ~ 5.0) */
+  trust_score: number;
 };
 
 const adminKey = ['admin'] as const;

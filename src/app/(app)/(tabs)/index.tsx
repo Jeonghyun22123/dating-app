@@ -16,14 +16,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
-import {
-  DISTANCE_OPTIONS,
-  refreshDiscover,
-  swipeProfile,
-  useDiscover,
-  type DiscoverProfile,
-  type DistanceKm,
-} from '@/features/discover/api';
+import { refreshDiscover, swipeProfile, useDiscover, type DiscoverProfile } from '@/features/discover/api';
 import { DeckCard, type DeckAction } from '@/features/discover/deck-card';
 import { photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
@@ -52,56 +45,9 @@ const shadow = {
   textShadowRadius: 4,
 };
 
-/** 거리 범위 선택. 사진 위(onPhoto)와 빈 화면 양쪽에서 씁니다. */
-function DistanceChips({
-  value,
-  onChange,
-  onPhoto,
-}: {
-  value: DistanceKm;
-  onChange: (km: DistanceKm) => void;
-  onPhoto?: boolean;
-}) {
-  return (
-    <View className="flex-row gap-1.5">
-      {DISTANCE_OPTIONS.map((km) => {
-        const selected = value === km;
-        const container = selected
-          ? onPhoto
-            ? 'bg-white'
-            : 'bg-brand-500'
-          : onPhoto
-            ? 'bg-black/35'
-            : 'border border-line bg-card';
-        const label = selected
-          ? onPhoto
-            ? 'font-semibold text-neutral-900'
-            : 'font-semibold text-white'
-          : onPhoto
-            ? 'text-white'
-            : 'text-muted';
-        return (
-          <Pressable
-            key={km}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: selected }}
-            accessibilityLabel={`${km}km 이내`}
-            hitSlop={4}
-            onPress={() => onChange(km)}
-            className={`rounded-full px-3 py-1.5 ${container}`}>
-            <Text className={`text-sm ${label}`}>{km}km</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 type CardProps = {
   profile: DiscoverProfile;
   myHobbies: string[];
-  maxKm: DistanceKm;
-  onChangeKm: (km: DistanceKm) => void;
   onOpenSafety: () => void;
   onPass: () => void;
   onLike: () => void;
@@ -117,17 +63,7 @@ type CardProps = {
  * 화면을 꽉 채우는 프로필 카드. 사진이 배경이고 모든 정보와 버튼이 사진 위에 올라갑니다.
  * (세로 스크롤 없음 — 소개글은 3줄, 취미는 5개까지만 보여줍니다)
  */
-function ProfileCard({
-  profile,
-  myHobbies,
-  maxKm,
-  onChangeKm,
-  onOpenSafety,
-  onPass,
-  onLike,
-  disabled,
-  revealed,
-}: CardProps) {
+function ProfileCard({ profile, myHobbies, onOpenSafety, onPass, onLike, disabled, revealed }: CardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const photos = profile.photoUrls;
   const index = Math.min(photoIndex, Math.max(photos.length - 1, 0));
@@ -254,7 +190,7 @@ function ProfileCard({
             </View>
           ) : null}
           <View pointerEvents="box-none" className="flex-row items-center justify-between">
-            <DistanceChips value={maxKm} onChange={onChangeKm} onPhoto />
+            <View />
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="신고 또는 차단"
@@ -285,7 +221,12 @@ function ProfileCard({
               <Text style={shadow} className="text-3xl font-bold text-white">
                 {profile.nickname}, {profile.age}
               </Text>
-              {profile.verification_status === 'approved' ? (
+              {profile.trust_level === 'high' ? (
+                <View className="flex-row items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1">
+                  <Ionicons name="shield-checkmark" size={14} color="#422006" />
+                  <Text className="text-xs font-semibold text-amber-950">신뢰 높음</Text>
+                </View>
+              ) : profile.verification_status === 'approved' ? (
                 <View className="flex-row items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1">
                   <Ionicons name="checkmark-circle" size={14} color="#ffffff" />
                   <Text className="text-xs font-semibold text-white">본인 인증</Text>
@@ -360,8 +301,7 @@ export default function DiscoverScreen() {
   const colors = useThemeColors();
   const router = useRouter();
   const { data: me } = useMyProfile();
-  const [maxKm, setMaxKm] = useState<DistanceKm>(30);
-  const discover = useDiscover(maxKm);
+  const discover = useDiscover();
   const [handled, setHandled] = useState<Handled>({});
   const [error, setError] = useState<string | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -443,8 +383,6 @@ export default function DiscoverScreen() {
                     <ProfileCard
                       profile={profile}
                       myHobbies={myHobbies}
-                      maxKm={maxKm}
-                      onChangeKm={isTop ? setMaxKm : noop}
                       onOpenSafety={isTop ? () => setSafetyOpen(true) : noop}
                       onPass={() => decide('pass')}
                       onLike={() => decide('like')}
@@ -469,13 +407,13 @@ export default function DiscoverScreen() {
             ) : (
               <>
                 <Text className="text-center text-xl font-bold text-fg">
-                  근처의 새로운 사람을 모두 봤어요
+                  조건에 맞는 새로운 사람을 모두 봤어요
                 </Text>
                 <Text className="text-center text-base leading-6 text-muted">
-                  거리 범위를 넓히거나 잠시 후 다시 확인해 보세요.
+                  만남 조건의 거리나 나이 범위를 넓히거나, 잠시 후 다시 확인해 보세요.
                 </Text>
-                <DistanceChips value={maxKm} onChange={setMaxKm} />
-                <View className="w-full">
+                <View className="w-full gap-3">
+                  <Button title="만남 조건 변경" onPress={() => router.push('/preferences')} />
                   <Button
                     title="새로고침"
                     variant="secondary"

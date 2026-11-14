@@ -22,10 +22,16 @@ export type Profile = {
   is_banned: boolean;
   onboarding_completed_at: string | null;
   selfie_submitted_at: string | null;
+  /** 만남 조건. 아직 설정하지 않았으면 null (Phase 5 이전 가입자) */
+  pref_genders: Gender[] | null;
+  pref_age_min: number | null;
+  /** 60 은 "60세 이상"(상한 없음) */
+  pref_age_max: number | null;
+  pref_distance_km: number | null;
 };
 
 export const PROFILE_COLUMNS =
-  'id, role, nickname, gender, birth_date, is_adult_verified, purpose, hobbies, bio, neighborhood_name, trust_score, verification_status, coin_balance, is_premium, is_banned, onboarding_completed_at, selfie_submitted_at';
+  'id, role, nickname, gender, birth_date, is_adult_verified, purpose, hobbies, bio, neighborhood_name, trust_score, verification_status, coin_balance, is_premium, is_banned, onboarding_completed_at, selfie_submitted_at, pref_genders, pref_age_min, pref_age_max, pref_distance_km';
 
 export type ProfilePhoto = {
   id: string;

@@ -86,6 +86,11 @@ where id = (select id from auth.users where email = 'you@example.com');
 
 4. 앱에서 새로고침 → 내 프로필 탭의 "관리자 페이지" 버튼 또는 주소 `/admin`
 
+### Phase 5 (만남 조건 · 신뢰 점수 · 셀카 검증 방식)
+
+SQL Editor 에 [`supabase_phase5.sql`](./supabase_phase5.sql) 전체를 붙여넣고 실행합니다. **필수**입니다 —
+실행하지 않으면 앱이 "DB 업데이트가 필요해요" 화면을 보여줍니다. Edge Function 재배포는 필요 없습니다.
+
 ### 설정 화면 (알림 · 화면 테마)
 
 SQL Editor 에 [`supabase_settings.sql`](./supabase_settings.sql) 을 실행하면 알림 수신 설정이 저장됩니다.
@@ -97,7 +102,7 @@ SQL Editor 에 [`supabase_settings.sql`](./supabase_settings.sql) 을 실행하�
 src/
   app/            sign-in, sign-up, onboarding, admin, (app)/(tabs)/{index,matches,profile}, (app)/chat/[matchId], (app)/selfie
                   _layout.tsx 가 로그인·온보딩 상태로 접근 제어
-  components/ui/  Button, TextField, Chip, Screen, Avatar
+  components/ui/  Button, TextField, Chip, Screen, Avatar, RangeSlider, TextLink
   features/
     identity/     성인 검증 로직(adult-verification.ts), 본인확인 수단 경계(identity-provider.ts)
     onboarding/   온보딩 단계 화면 (기본 정보 → 프로필 → 동네 → 사진 → 셀카 → 완료)
@@ -108,6 +113,8 @@ src/
     safety/       신고·차단·매칭 해제 시트
     admin/        관리자 페이지 (통계, 셀카 심사, 신고, 회원)
     settings/     알림 수신 설정 저장
+    preferences/  만남 조건 (성별 · 나이 · 거리) 입력과 저장
+    trust/        내 신뢰 점수 카드
   theme/          화면 테마(화이트/다크/블랙 & 핑크) 정의와 적용
   lib/            env, supabase, auth, analytics(PostHog), query-client
   providers/      app-providers.tsx
@@ -120,6 +127,7 @@ supabase_migration.sql        Phase 1 스키마
 supabase_phase2.sql           Phase 2 스키마 + Storage
 supabase_phase3.sql           Phase 3 추천·매칭·채팅 함수
 supabase_phase4.sql           Phase 4 관리자 함수 + 작업 기록
+supabase_phase5.sql           Phase 5 만남 조건 · 신뢰 점수 · 관리자 설정
 supabase_settings.sql         알림 수신 설정
 supabase_seed_test_users.sql  개발용 가짜 프로필
 supabase_seed_reset.sql       개발용: 가짜 프로필 테스트 기록 초기화
