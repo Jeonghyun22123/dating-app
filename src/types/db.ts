@@ -28,10 +28,12 @@ export type Profile = {
   /** 60 은 "60세 이상"(상한 없음) */
   pref_age_max: number | null;
   pref_distance_km: number | null;
+  /** 남은 시그널 횟수 (가입 시 5회). 서버만 차감합니다 */
+  signal_credits: number;
 };
 
 export const PROFILE_COLUMNS =
-  'id, role, nickname, gender, birth_date, is_adult_verified, purpose, hobbies, bio, neighborhood_name, trust_score, verification_status, coin_balance, is_premium, is_banned, onboarding_completed_at, selfie_submitted_at, pref_genders, pref_age_min, pref_age_max, pref_distance_km';
+  'id, role, nickname, gender, birth_date, is_adult_verified, purpose, hobbies, bio, neighborhood_name, trust_score, verification_status, coin_balance, is_premium, is_banned, onboarding_completed_at, selfie_submitted_at, pref_genders, pref_age_min, pref_age_max, pref_distance_km, signal_credits';
 
 export type ProfilePhoto = {
   id: string;

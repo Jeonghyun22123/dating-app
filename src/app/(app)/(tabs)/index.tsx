@@ -22,6 +22,7 @@ import { photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
 import { SafetySheet } from '@/features/safety/safety-sheet';
+import { SignalComposeSheet } from '@/features/signals/compose-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { ThemeView, useThemeColors } from '@/theme/theme-view';
 
@@ -51,6 +52,10 @@ type CardProps = {
   onOpenSafety: () => void;
   onPass: () => void;
   onLike: () => void;
+  /** 시그널 작성 창 열기 */
+  onSignal: () => void;
+  /** 남은 시그널 횟수 (버튼에 표시) */
+  signalCredits: number;
   disabled?: boolean;
   /**
    * false 면 가려진 상태: 사진은 윤곽만 보이게 흐려지고 이름·소개 등 정보는 숨깁니다.
@@ -63,7 +68,17 @@ type CardProps = {
  * 화면을 꽉 채우는 프로필 카드. 사진이 배경이고 모든 정보와 버튼이 사진 위에 올라갑니다.
  * (세로 스크롤 없음 — 소개글은 3줄, 취미는 5개까지만 보여줍니다)
  */
-function ProfileCard({ profile, myHobbies, onOpenSafety, onPass, onLike, disabled, revealed }: CardProps) {
+function ProfileCard({
+  profile,
+  myHobbies,
+  onOpenSafety,
+  onPass,
+  onLike,
+  onSignal,
+  signalCredits,
+  disabled,
+  revealed,
+}: CardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const photos = profile.photoUrls;
   const index = Math.min(photoIndex, Math.max(photos.length - 1, 0));
@@ -184,7 +199,7 @@ function ProfileCard({ profile, myHobbies, onOpenSafety, onPass, onLike, disable
               {photos.map((url, i) => (
                 <View
                   key={url}
-                  className={`h-1 flex-1 rounded-full ${i === index ? 'bg-card' : 'bg-white/40'}`}
+                  className={`h-1 flex-1 rounded-full ${i === index ? 'bg-white' : 'bg-white/40'}`}
                 />
               ))}
             </View>
@@ -217,6 +232,18 @@ function ProfileCard({ profile, myHobbies, onOpenSafety, onPass, onLike, disable
         />
         <View pointerEvents="box-none" className="absolute bottom-0 left-0 right-0 gap-2.5 p-4">
           <View pointerEvents="none" className="gap-2.5">
+            {profile.signal_message ? (
+              <View className="gap-1 rounded-2xl bg-brand-500 px-4 py-3">
+                <View className="flex-row items-center gap-1.5">
+                  <Ionicons name="paper-plane" size={14} color="#ffffff" />
+                  <Text className="text-xs font-bold text-white">{profile.nickname}님이 보낸 시그널</Text>
+                </View>
+                <Text numberOfLines={3} className="text-base leading-6 text-white">
+                  {profile.signal_message}
+                </Text>
+              </View>
+            ) : null}
+
             <View className="flex-row flex-wrap items-center gap-2">
               <Text style={shadow} className="text-3xl font-bold text-white">
                 {profile.nickname}, {profile.age}
@@ -273,6 +300,20 @@ function ProfileCard({ profile, myHobbies, onOpenSafety, onPass, onLike, disable
               <Ionicons name="close" size={20} color="#404040" />
               <Text className="text-base font-semibold text-neutral-800">다음에</Text>
             </Pressable>
+            {/* 시그널: 메시지를 붙여 바로 대화를 신청합니다. 나에게 시그널을 보낸 사람에게는 필요 없어 숨깁니다. */}
+            {profile.signal_message ? null : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`시그널 보내기, 남은 횟수 ${signalCredits}회`}
+                disabled={disabled}
+                onPress={onSignal}
+                className={`h-14 w-14 items-center justify-center rounded-2xl bg-white/95 active:bg-white/80 ${disabled ? 'opacity-50' : ''}`}>
+                <Ionicons name="paper-plane" size={22} color="#e11d48" />
+                <View className="absolute -right-1.5 -top-1.5 h-5 min-w-5 items-center justify-center rounded-full bg-neutral-900 px-1">
+                  <Text className="text-xs font-bold text-white">{signalCredits}</Text>
+                </View>
+              </Pressable>
+            )}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="관심 있어요"
@@ -305,6 +346,11 @@ export default function DiscoverScreen() {
   const [handled, setHandled] = useState<Handled>({});
   const [error, setError] = useState<string | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const [signalOpen, setSignalOpen] = useState(false);
+  // 맨 위 카드를 버튼처럼 날려 보내는 함수 (시그널 전송 후 사용)
+  const dismissTop = useRef<((action: DeckAction) => void) | null>(null);
+  // 시그널로 이미 서버에 기록된 상대 (카드가 날아간 뒤 '관심'을 한 번 더 저장하지 않기 위함)
+  const signaled = useRef(new Set<string>());
   const [matched, setMatched] = useState<{
     matchId: string;
     nickname: string;
@@ -336,6 +382,12 @@ export default function DiscoverScreen() {
    */
   async function handleDecide(profile: DiscoverProfile, action: DeckAction) {
     setError(null);
+    if (signaled.current.has(profile.id)) {
+      // 시그널은 보낼 때 이미 저장되었으므로 화면에서만 치웁니다.
+      setHandled((state) => ({ ...state, [profile.id]: Date.now() }));
+      if (deck.length - 1 <= 2) refreshDiscover();
+      return;
+    }
     setHandled((state) => ({ ...state, [profile.id]: 'pending' }));
     const remaining = deck.length - 1;
     try {
@@ -379,16 +431,21 @@ export default function DiscoverScreen() {
                   x={positionOf(profile.id)}
                   frontX={isTop ? undefined : positionOf(current.id)}
                   onDecide={(action) => handleDecide(profile, action)}>
-                  {(decide) => (
-                    <ProfileCard
-                      profile={profile}
-                      myHobbies={myHobbies}
-                      onOpenSafety={isTop ? () => setSafetyOpen(true) : noop}
-                      onPass={() => decide('pass')}
-                      onLike={() => decide('like')}
-                      revealed={isTop}
-                    />
-                  )}
+                  {(decide) => {
+                    if (isTop) dismissTop.current = decide;
+                    return (
+                      <ProfileCard
+                        profile={profile}
+                        myHobbies={myHobbies}
+                        onOpenSafety={isTop ? () => setSafetyOpen(true) : noop}
+                        onPass={() => decide('pass')}
+                        onLike={() => decide('like')}
+                        onSignal={isTop ? () => setSignalOpen(true) : noop}
+                        signalCredits={me?.signal_credits ?? 0}
+                        revealed={isTop}
+                      />
+                    );
+                  }}
                 </DeckCard>
               );
             })}
@@ -442,6 +499,27 @@ export default function DiscoverScreen() {
           myId={me.id}
           target={current}
           onRemoved={() => hide(current.id)}
+        />
+      ) : null}
+
+      {me && current ? (
+        <SignalComposeSheet
+          visible={signalOpen}
+          onClose={() => setSignalOpen(false)}
+          myId={me.id}
+          target={current}
+          credits={me.signal_credits}
+          onSent={({ matchId }) => {
+            setSignalOpen(false);
+            track(AnalyticsEvent.SignalSent);
+            signaled.current.add(current.id);
+            if (matchId) {
+              track(AnalyticsEvent.MatchCreated);
+              setMatched({ matchId, nickname: current.nickname });
+            }
+            // 보낸 뒤에는 카드가 '관심'과 같은 방향으로 날아갑니다.
+            dismissTop.current?.('like');
+          }}
         />
       ) : null}
 

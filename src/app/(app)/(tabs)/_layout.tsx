@@ -4,6 +4,7 @@ import type { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useMatches } from '@/features/chat/api';
+import { useReceivedSignals } from '@/features/signals/api';
 import { useThemeColors } from '@/theme/theme-view';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -18,7 +19,9 @@ export default function TabsLayout() {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const { data: matches } = useMatches();
-  const unread = (matches ?? []).reduce((sum, match) => sum + match.unread_count, 0);
+  const { data: signals } = useReceivedSignals();
+  // 안 읽은 메시지 + 아직 답하지 않은 받은 시그널
+  const unread = (matches ?? []).reduce((sum, match) => sum + match.unread_count, 0) + (signals?.length ?? 0);
 
   return (
     <Tabs
@@ -36,7 +39,10 @@ export default function TabsLayout() {
         },
         tabBarBadgeStyle: { backgroundColor: colors.brand, color: '#ffffff' },
       }}>
-      <Tabs.Screen name="index" options={{ title: '둘러보기', tabBarIcon: icon('compass', 'compass-outline') }} />
+      <Tabs.Screen
+        name="index"
+        options={{ title: '둘러보기', tabBarIcon: icon('compass', 'compass-outline') }}
+      />
       <Tabs.Screen
         name="matches"
         options={{
@@ -45,7 +51,10 @@ export default function TabsLayout() {
           tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
         }}
       />
-      <Tabs.Screen name="profile" options={{ title: '내 프로필', tabBarIcon: icon('person', 'person-outline') }} />
+      <Tabs.Screen
+        name="profile"
+        options={{ title: '내 프로필', tabBarIcon: icon('person', 'person-outline') }}
+      />
     </Tabs>
   );
 }
