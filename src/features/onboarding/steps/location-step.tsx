@@ -10,9 +10,22 @@ import { LIMITS } from '@/features/profile/constants';
 
 type Coords = { latitude: number; longitude: number };
 
-export function LocationStep({ userId, progress }: { userId: string; progress: string }) {
+export function LocationStep({
+  userId,
+  progress,
+  onDone,
+  onBack,
+  initialName = '',
+}: {
+  userId: string;
+  progress?: string;
+  /** 저장 후 호출 (프로필 수정에서 화면을 닫는 용도) */
+  onDone?: () => void;
+  onBack?: () => void;
+  initialName?: string;
+}) {
   const [coords, setCoords] = useState<Coords | null>(null);
-  const [neighborhood, setNeighborhood] = useState('');
+  const [neighborhood, setNeighborhood] = useState(initialName);
   const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +68,7 @@ export function LocationStep({ userId, progress }: { userId: string; progress: s
     try {
       await saveLocation(userId, coords, neighborhood);
       await refreshMyProfile(userId);
+      onDone?.();
     } catch {
       setError('위치를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
@@ -66,6 +80,7 @@ export function LocationStep({ userId, progress }: { userId: string; progress: s
     <Screen
       progress={progress}
       title="어느 동네에 계신가요?"
+      onBack={onBack}
       subtitle="가까운 사람을 추천하는 데 사용해요. 정확한 위치는 다른 사람에게 공개되지 않고, 대략적인 거리만 보여요."
       footer={
         <>

@@ -91,6 +91,31 @@ where id = (select id from auth.users where email = 'you@example.com');
 SQL Editor 에 [`supabase_phase5.sql`](./supabase_phase5.sql) 전체를 붙여넣고 실행합니다. **필수**입니다 —
 실행하지 않으면 앱이 "DB 업데이트가 필요해요" 화면을 보여줍니다. Edge Function 재배포는 필요 없습니다.
 
+### Phase 6 (약관 동의 · 계정 관리 · 웹 배포 준비)
+
+1. SQL Editor 에 [`supabase_phase6.sql`](./supabase_phase6.sql) 실행 (**필수**, 앞의 SQL 을 모두 실행한 뒤)
+2. Edge Function 추가 배포
+
+```bash
+npx supabase functions deploy delete-account --use-api
+```
+
+3. 약관 초안(`src/features/consent/documents.ts`)의 `[상호명]` 등 대괄호 항목을 채우고, 게시 전 법률 검토를 받으세요.
+
+## 웹 배포 (Vercel)
+
+1. https://vercel.com 에 GitHub 계정으로 가입 → **Add New → Project** → 이 저장소 선택
+2. 설정은 `vercel.json` 에 들어 있어 그대로 두고, **Environment Variables** 에 추가:
+   - `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (`.env.local` 과 같은 값)
+   - `EXPO_PUBLIC_SITE_URL` = 배포 주소 (첫 배포 후 받은 주소, 예: `https://dating-app.vercel.app`) → 넣은 뒤 **Redeploy**
+   - (선택) `EXPO_PUBLIC_POSTHOG_KEY`
+3. Supabase > **Authentication > URL Configuration**
+   - Site URL: 배포 주소
+   - Redirect URLs: `배포주소/**` 와 개발용 `http://localhost:8081/**`
+4. 휴대폰에서 배포 주소를 열고 **홈 화면에 추가**하면 앱처럼 실행됩니다 (PWA).
+
+`main` 에 올라간 코드는 Vercel 이 자동으로 다시 배포합니다.
+
 ### 시그널 (메시지와 함께 보내는 대화 신청)
 
 SQL Editor 에 [`supabase_signal.sql`](./supabase_signal.sql) 전체를 붙여넣고 실행합니다. **필수**입니다 (Phase 5 SQL 다음에 실행).
@@ -121,6 +146,9 @@ src/
     preferences/  만남 조건 (성별 · 나이 · 거리) 입력과 저장
     trust/        내 신뢰 점수 카드
     signals/      시그널 보내기 · 받은 시그널
+    consent/      약관 동의 화면과 약관 초안
+    account/      비밀번호 변경 화면
+    sessions/     접속·체류 시간 기록
   theme/          화면 테마(화이트/다크/블랙 & 핑크) 정의와 적용
   lib/            env, supabase, auth, analytics(PostHog), query-client
   providers/      app-providers.tsx
@@ -129,12 +157,14 @@ supabase/functions/
   moderate-photo/             Sightengine 사진·셀카 검수
   update-profile-embedding/   OpenAI 임베딩 → profiles.embedding
   admin-review-selfie/        셀카 승인·반려 + 셀카 파일 영구 삭제
+  delete-account/             회원 탈퇴 (파일 + 계정 삭제)
 supabase_migration.sql        Phase 1 스키마
 supabase_phase2.sql           Phase 2 스키마 + Storage
 supabase_phase3.sql           Phase 3 추천·매칭·채팅 함수
 supabase_phase4.sql           Phase 4 관리자 함수 + 작업 기록
 supabase_phase5.sql           Phase 5 만남 조건 · 신뢰 점수 · 관리자 설정
 supabase_signal.sql           시그널 (횟수, 보내기, 받은 시그널, 수락 · 거절)
+supabase_phase6.sql           Phase 6 약관 동의 · 탈퇴 대비 · 접속 기록
 supabase_settings.sql         알림 수신 설정
 supabase_seed_test_users.sql  개발용 가짜 프로필
 supabase_seed_reset.sql       개발용: 가짜 프로필 테스트 기록 초기화

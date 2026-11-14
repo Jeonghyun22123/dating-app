@@ -13,7 +13,8 @@ export type AdminStats = Record<
   | 'users_total' | 'users_onboarded' | 'users_new_today' | 'users_new_7d' | 'users_active_24h' | 'users_banned'
   | 'gender_female' | 'gender_male' | 'purpose_friend' | 'purpose_hobby' | 'purpose_serious'
   | 'verified_approved' | 'selfies_pending' | 'photos_pending'
-  | 'matches_total' | 'matches_7d' | 'messages_7d' | 'reports_pending',
+  | 'matches_total' | 'matches_7d' | 'messages_7d' | 'reports_pending'
+  | 'sessions_24h' | 'avg_session_minutes_7d',
   number
 >;
 

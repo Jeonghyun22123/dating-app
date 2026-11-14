@@ -4,12 +4,14 @@ import { useInboxRealtime } from '@/features/chat/api';
 import { hasPreferences } from '@/features/preferences/api';
 import { PreferencesScreen } from '@/features/preferences/preferences-screen';
 import { useMyProfile } from '@/features/profile/api';
+import { useSessionTracking } from '@/features/sessions/use-session-tracking';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function AppLayout() {
   const myId = useAuthStore((s) => s.session?.user.id);
   // 어느 화면에 있든 새 매칭·메시지를 받아 채팅 탭 배지를 갱신합니다.
   useInboxRealtime(myId);
+  useSessionTracking(myId);
 
   // 만남 조건이 생기기 전에 가입한 사용자는 조건을 먼저 입력받습니다 (저장하면 자동으로 넘어갑니다).
   const { data: profile } = useMyProfile();
@@ -31,6 +33,11 @@ export default function AppLayout() {
       <Stack.Screen name="selfie" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="preferences" />
+      <Stack.Screen name="edit-profile" />
+      <Stack.Screen name="edit-photos" />
+      <Stack.Screen name="edit-location" />
+      <Stack.Screen name="change-password" />
+      <Stack.Screen name="delete-account" />
     </Stack>
   );
 }

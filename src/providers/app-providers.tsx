@@ -16,6 +16,8 @@ function useAuthSync() {
     // 구독 직후 INITIAL_SESSION 이벤트로 저장된 세션이 한 번 전달됩니다.
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (event === 'PASSWORD_RECOVERY') useAuthStore.getState().setRecovering(true);
+      if (event === 'SIGNED_OUT') useAuthStore.getState().setRecovering(false);
       if (session) {
         identifyUser(session.user.id);
         // 앱을 열거나 로그인할 때 마지막 활동 시각을 남깁니다 (관리자 통계의 '최근 활동'에 사용).

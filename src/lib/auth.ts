@@ -2,6 +2,7 @@ import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
 import { resetAnalytics } from './analytics';
+import { env } from './env';
 import { queryClient } from './query-client';
 import { supabase } from './supabase';
 
@@ -36,6 +37,9 @@ export function authErrorMessage(error: { message?: string; code?: string } | nu
   if (code === 'user_already_exists' || /already registered/i.test(message)) {
     return '이미 가입된 이메일입니다. 로그인해 주세요.';
   }
+  if (code === 'same_password') {
+    return '지금 쓰는 비밀번호와 다른 비밀번호를 입력해 주세요.';
+  }
   if (code === 'weak_password' || /password/i.test(message)) {
     return `비밀번호는 ${PASSWORD_MIN}자 이상으로 설정해 주세요.`;
   }
@@ -49,6 +53,17 @@ export function authErrorMessage(error: { message?: string; code?: string } | nu
   return `문제가 발생했습니다. 잠시 후 다시 시도해 주세요.${code ? ` (${code})` : ''}`;
 }
 
+/**
+ * 메일 속 링크(가입 인증, 비밀번호 재설정)를 누른 뒤 돌아올 주소.
+ * 배포 주소(EXPO_PUBLIC_SITE_URL)가 있으면 그 주소, 없으면 지금 열린 웹 주소, 앱이면 앱 주소.
+ * 어느 것이든 Supabase > Authentication > URL Configuration 의 Redirect URLs 에 등록되어 있어야 합니다.
+ */
+export function authRedirectUrl() {
+  if (env.siteUrl) return env.siteUrl;
+  if (Platform.OS === 'web' && typeof window !== 'undefined') return window.location.origin;
+  return Linking.createURL('/');
+}
+
 export async function signIn(email: string, password: string) {
   const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
   if (error) throw error;
@@ -56,8 +71,7 @@ export async function signIn(email: string, password: string) {
 
 /** 반환값: 이메일 인증이 필요하면 'confirm_email', 바로 로그인되었으면 'signed_in'. */
 export async function signUp(email: string, password: string): Promise<'confirm_email' | 'signed_in'> {
-  const emailRedirectTo =
-    Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : Linking.createURL('/');
+  const emailRedirectTo = authRedirectUrl();
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
@@ -65,6 +79,33 @@ export async function signUp(email: string, password: string): Promise<'confirm_
   });
   if (error) throw error;
   return data.session ? 'signed_in' : 'confirm_email';
+}
+
+/** 비밀번호 재설정 메일 보내기. 가입되지 않은 이메일이어도 똑같이 성공으로 보입니다 (가입 여부 노출 방지). */
+export async function requestPasswordReset(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: authRedirectUrl(),
+  });
+  if (error) throw error;
+}
+
+/** 로그인된(또는 재설정 링크로 들어온) 상태에서 새 비밀번호로 바꿉니다. */
+export async function updatePassword(password: string) {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+}
+
+/**
+ * 회원 탈퇴. 서버가 사진·셀카 파일과 계정, 연결된 데이터를 모두 지운 뒤 로그아웃합니다.
+ * 되돌릴 수 없습니다.
+ */
+export async function deleteAccount() {
+  const { error } = await supabase.functions.invoke('delete-account', { body: { confirm: '탈퇴' } });
+  if (error) throw error;
+  // 계정이 이미 지워졌으므로 서버 로그아웃이 실패해도 기기의 로그인 정보는 지웁니다.
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+  queryClient.clear();
+  resetAnalytics();
 }
 
 export async function signOut() {

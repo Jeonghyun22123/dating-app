@@ -125,6 +125,21 @@ function summarize(profile: Profile) {
   return `${gender} · ${formatAgeRange(prefs.ageMin, prefs.ageMax)} · ${prefs.distanceKm}km 이내`;
 }
 
+/** 눌러서 다른 화면으로 가는 한 줄 */
+function Row({ label, onPress, danger }: { label: string; onPress: () => void; danger?: boolean }) {
+  const colors = useThemeColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      className="flex-row items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 active:bg-field">
+      <Text className={`flex-1 text-base ${danger ? 'text-red-600' : 'text-fg'}`}>{label}</Text>
+      <Ionicons name="chevron-forward" size={20} color={colors.subtle} />
+    </Pressable>
+  );
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const colors = useThemeColors();
@@ -177,10 +192,18 @@ export default function SettingsScreen() {
       {userId ? <NotificationSection userId={userId} /> : null}
 
       <Section title="계정">
-        <View className="px-4 py-3">
+        <View className="border-b border-line px-4 py-3">
           <Text className="text-sm text-muted">로그인한 이메일</Text>
           <Text className="text-base text-fg">{email}</Text>
         </View>
+        <Row label="비밀번호 변경" onPress={() => router.push('/change-password')} />
+        <Row label="회원 탈퇴" onPress={() => router.push('/delete-account')} danger />
+      </Section>
+
+      <Section title="약관 및 정책">
+        <Row label="이용약관" onPress={() => router.push('/legal/terms')} />
+        <Row label="개인정보 수집·이용 안내" onPress={() => router.push('/legal/privacy')} />
+        <Row label="위치정보 이용약관" onPress={() => router.push('/legal/location')} />
       </Section>
       <Button title="로그아웃" variant="secondary" onPress={signOut} />
 

@@ -1,5 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '@/theme/theme-view';
 
@@ -11,20 +20,31 @@ type Props = {
   children: ReactNode;
   /** 화면 아래에 고정되는 영역 (주로 버튼) */
   footer?: ReactNode;
+  /** 있으면 제목 위에 뒤로 가기 버튼을 보여줍니다 */
+  onBack?: () => void;
 };
 
 /** 모든 화면의 공통 틀: 안전 영역, 키보드 대응, 스크롤, 웹에서의 최대 너비. */
-export function Screen({ title, subtitle, progress, children, footer }: Props) {
+export function Screen({ title, subtitle, progress, children, footer, onBack }: Props) {
+  const colors = useThemeColors();
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           className="flex-1"
           contentContainerClassName="items-center px-6 pb-8 pt-10"
           keyboardShouldPersistTaps="handled">
           <View className="w-full max-w-md gap-6">
+            {onBack ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="뒤로"
+                hitSlop={8}
+                onPress={onBack}
+                className="-mb-2 -ml-1 self-start">
+                <Ionicons name="chevron-back" size={28} color={colors.fg} />
+              </Pressable>
+            ) : null}
             {title ? (
               <View className="gap-2">
                 {progress ? <Text className="text-sm font-semibold text-brand-600">{progress}</Text> : null}

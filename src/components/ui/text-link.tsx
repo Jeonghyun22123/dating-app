@@ -7,19 +7,21 @@ type Props = {
   /** 강조되는 이동 문구 (예: "회원가입") */
   label: string;
   href: Href;
+  /** 기본은 현재 화면을 바꿔치기(replace). false 면 쌓아서 이동(뒤로 가기 가능) */
+  replace?: boolean;
 };
 
 /**
  * "아직 계정이 없나요? 회원가입" 처럼 문장 한 줄 전체가 눌리는 이동 링크.
  * 글자 한 단어만 눌리면 휴대폰에서 맞추기 어려워서, 줄 전체를 높이 48 이상의 누름 영역으로 만듭니다.
  */
-export function TextLink({ prompt, label, href }: Props) {
+export function TextLink({ prompt, label, href, replace = true }: Props) {
   const router = useRouter();
   return (
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={prompt ? `${prompt} ${label}` : label}
-      onPress={() => router.replace(href)}
+      onPress={() => (replace ? router.replace(href) : router.push(href))}
       hitSlop={8}
       className="min-h-12 flex-row items-center justify-center gap-1 rounded-2xl px-4 active:bg-field">
       {prompt ? <Text className="text-base text-muted">{prompt}</Text> : null}

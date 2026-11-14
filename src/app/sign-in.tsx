@@ -54,6 +54,7 @@ export default function SignInScreen() {
       </View>
       <View className="gap-4">
         <Button title="로그인" onPress={handleSubmit} loading={loading} />
+        <TextLink label="비밀번호를 잊으셨나요?" href="/forgot-password" replace={false} />
         <TextLink prompt="아직 계정이 없나요?" label="회원가입" href="/sign-up" />
       </View>
     </Screen>

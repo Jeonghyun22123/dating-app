@@ -21,6 +21,11 @@ export const env = {
   supabaseAnonKey: (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim(),
   posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '',
   posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+  /**
+   * 배포한 웹 주소 (예: https://dating-app.vercel.app). 인증·비밀번호 재설정 메일의 링크가 이 주소로 돌아옵니다.
+   * 비워두면 지금 열려 있는 웹 주소(개발 중에는 localhost)를 씁니다.
+   */
+  siteUrl: normalizeSupabaseUrl(process.env.EXPO_PUBLIC_SITE_URL ?? ''),
 } as const;
 
 export const isSupabaseConfigured =

@@ -51,6 +51,8 @@ function Stats({ s }: { s: AdminStats }) {
         <Stat label="전체 매칭" value={s.matches_total} />
         <Stat label="최근 7일 매칭" value={s.matches_7d} />
         <Stat label="최근 7일 메시지 수" value={s.messages_7d} />
+        <Stat label="최근 24시간 접속" value={s.sessions_24h ?? 0} />
+        <Stat label="평균 체류(분, 7일)" value={s.avg_session_minutes_7d ?? 0} />
       </Group>
     </View>
   );
