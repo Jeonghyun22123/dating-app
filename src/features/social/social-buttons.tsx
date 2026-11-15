@@ -10,6 +10,7 @@ import {
   useEnabledProviders,
   type SocialProvider,
 } from './api';
+import { GoogleLogo } from './google-logo';
 
 /**
  * 버튼 모양은 각 회사의 로그인 버튼 안내를 따릅니다.
@@ -80,7 +81,11 @@ export function SocialButtons() {
               <ActivityIndicator color="#525252" />
             ) : (
               <>
-                <Ionicons name={style.icon} size={20} color={style.iconColor} />
+                {provider === 'google' ? (
+                  <GoogleLogo size={20} />
+                ) : (
+                  <Ionicons name={style.icon} size={20} color={style.iconColor} />
+                )}
                 <Text className={`text-base font-semibold ${style.text}`}>
                   {PROVIDER_LABEL[provider]}로 시작하기
                 </Text>
