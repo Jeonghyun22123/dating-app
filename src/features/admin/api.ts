@@ -89,6 +89,19 @@ export type AdminUser = {
 const adminKey = ['admin'] as const;
 const refreshAdmin = () => queryClient.invalidateQueries({ queryKey: adminKey });
 
+/**
+ * 하트·프리미엄을 바꾼 뒤에는 관리자 화면뿐 아니라 앱의 내 정보도 새로 받아옵니다.
+ * (관리자가 자기 계정에 지급한 경우 내 프로필·하트 화면에 바로 반영되도록)
+ */
+async function refreshAfterGrant() {
+  await Promise.all([
+    refreshAdmin(),
+    queryClient.invalidateQueries({ queryKey: ['profile'] }),
+    queryClient.invalidateQueries({ queryKey: ['wallet'] }),
+    queryClient.invalidateQueries({ queryKey: ['swipe-quota'] }),
+  ]);
+}
+
 export function useAdminStats() {
   return useQuery({
     queryKey: [...adminKey, 'stats'],
@@ -188,14 +201,14 @@ export async function grantHearts(userId: string, amount: number, note?: string)
     p_note: note ?? null,
   });
   if (error) throw error;
-  await refreshAdmin();
+  await refreshAfterGrant();
 }
 
 /** 프리미엄 지정 (days = 0 이면 해제). 결제(Phase 8) 전 테스트용 */
 export async function setPremium(userId: string, days: number) {
   const { error } = await supabase.rpc('admin_set_premium', { p_user: userId, p_days: days });
   if (error) throw error;
-  await refreshAdmin();
+  await refreshAfterGrant();
 }
 
 export type Economy = {

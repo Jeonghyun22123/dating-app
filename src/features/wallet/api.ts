@@ -53,6 +53,8 @@ export function useWallet() {
   return useQuery({
     queryKey: walletKey(userId),
     enabled: !!userId,
+    // 하트 화면에 들어올 때마다 최신 잔액을 받아옵니다.
+    refetchOnMount: 'always',
     queryFn: async () => {
       const { data, error } = await supabase.rpc('my_wallet');
       if (error) throw error;
