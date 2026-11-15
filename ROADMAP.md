@@ -5,7 +5,7 @@
 
 표기: ✅ 완료 · 🟡 코드는 있으나 조건 미충족 · ⬜ 예정
 
-마지막 갱신: Phase 6 개발 완료 (실제 배포는 Vercel 계정 연결 후)
+마지막 갱신: 간편가입(카카오·구글·애플·네이버) 계획 추가
 
 ---
 
@@ -20,7 +20,8 @@
 | Phase 5 | 만남 조건, 신뢰 점수, 셀카 검증 방식 설정 | ✅ |
 | 추가 | 시그널 (Phase 7 에서 앞당김), 설정 화면 (테마·알림) | ✅ |
 | Phase 6 | 계정 관리, 약관·동의, 웹 배포 준비 | ✅ (배포 실행만 남음) |
-| **Phase 7** | **하트, 스포트라이트, 무료 횟수 제한** | ⬜ **다음** |
+| **Phase 6.5** | **간편가입 (카카오 · 구글)** — 웹 배포 후 | ⬜ **다음** |
+| Phase 7 | 하트, 스포트라이트, 무료 횟수 제한 | ⬜ |
 | Phase 8 | 결제 (Toss · RevenueCat) | ⬜ |
 | Phase 9 | 본인 확인 강화 (PortOne 성인인증 + 자동 얼굴 비교) | ⬜ |
 | Phase 10 | 앱 출시 (푸시 알림, 스토어 심사) | ⬜ |
@@ -95,7 +96,7 @@
 | 2 | `supabase_phase2.sql` | 사진·셀카, Storage 버킷 |
 | 3 | `supabase_phase3.sql` | 추천·매칭·채팅 |
 | 4 | `supabase_phase4.sql` | 관리자 |
-| 5 | `supabase_settings.sql` | 알림 수신 설정 |
+| 5 | `supabase_settings.sql` | 알림 수신 설정 (Phase 6 SQL 이 이 파일을 전제로 하므로 **필수**) |
 | 6 | `supabase_phase5.sql` | 만남 조건·신뢰 점수 (앱 실행에 필수) |
 | 7 | `supabase_signal.sql` | 시그널 (앱 실행에 필수) |
 | 8 | `supabase_phase6.sql` | 약관 동의·탈퇴 대비·접속 기록 (앱 실행에 필수) |
@@ -107,7 +108,34 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 
 ## 앞으로 할 단계
 
-### Phase 7 · 하트·스포트라이트·무료 횟수 제한 ⬜ (다음)
+### Phase 6.5 · 간편가입 (카카오 · 구글) ⬜ (다음)
+선행 조건: **웹 배포 완료** (배포 주소가 있어야 로그인 후 돌아올 주소를 깔끔하게 설정할 수 있음)
+
+| 서비스 | 지원 | 시점 | 비고 |
+|---|---|---|---|
+| 카카오 | Supabase 기본 지원 | 이번 단계 | 한국 사용자에게 효과가 가장 큼 |
+| 구글 | Supabase 기본 지원 | 이번 단계 | |
+| 애플 | Supabase 기본 지원 | Phase 10 | iOS 앱에 외부 계정 로그인을 넣으면 사실상 필수 (App Store 심사 규정) |
+| 네이버 | 기본 목록에 없음 (별도 연동 필요) | 보류 | 사용자 요청이 많으면 추가 |
+
+사용자 작업 (각 서비스 개발자 사이트)
+- [ ] 구글: Google Cloud Console 에서 OAuth 동의 화면 + "OAuth 클라이언트 ID(웹)" 생성,
+      리디렉션 주소 `https://<프로젝트ID>.supabase.co/auth/v1/callback` 등록 → Supabase **Authentication > Sign In / Providers > Google** 에 Client ID·Secret 입력
+- [ ] 카카오: Kakao Developers 에서 앱 생성 + 카카오 로그인 활성화, 같은 리디렉션 주소 등록, 동의 항목 설정
+      → Supabase **Kakao** 항목에 REST API 키·Client Secret 입력
+  - 이메일을 필수로 받으려면 사업자 정보 등록(비즈 앱 전환)이 필요할 수 있음
+- 각 사이트의 메뉴 이름은 자주 바뀌므로, 진행할 때 화면을 보며 함께 설정
+
+개발 작업
+- 로그인·회원가입 화면에 "카카오로 시작하기", "Google로 시작하기" 버튼
+- 간편가입 후에도 기존 흐름 그대로: 약관 동의 → 성별·생년월일 → 프로필 → 사진 → 셀카
+  (소셜 계정은 생년월일·성별을 주지 않는 경우가 많아 성인 확인은 온보딩에서 계속 받음)
+- 소셜 가입자에게는 "비밀번호 변경"·"비밀번호 찾기" 대신 연결된 계정 표시
+- 같은 이메일로 이메일 가입과 소셜 가입을 모두 한 경우의 계정 처리 확인
+- 탈퇴 시 소셜 연결도 함께 정리되는지 확인
+- 앱(iOS·Android)에서의 간편가입은 Expo Go 제약이 있어 Phase 10 에서 앱 빌드와 함께 테스트
+
+### Phase 7 · 하트·스포트라이트·무료 횟수 제한 ⬜
 결제 없이 재화 기능부터 완성합니다.
 - 하트 잔액과 사용 내역 (`wallet_transactions`), 관리자 페이지에서 테스트용 하트 지급
 - 시그널 충전: 무료 5회를 다 쓴 뒤 하트로 추가
@@ -142,6 +170,7 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 - 푸시 알림 (새 매칭, 새 메시지, 받은 시그널) — 설정의 수신 여부(`notification_prefs`) 확인 후 발송
 - EAS Build, iOS·Android 실기기 테스트
 - 메일 인증·비밀번호 재설정 링크로 앱이 열리게 하기 (앱 전용 주소)
+- **애플 로그인 추가** (iOS 심사 필수) + 앱에서 카카오·구글 간편가입 동작 확인
 - 채팅 사진 전송 (서버 검수 경유)
 - 앱 이름·아이콘·스플래시, App Store · Google Play 심사 제출
 
@@ -203,6 +232,7 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 - **앱 이름과 정식 아이콘**: 지금은 "Dating App"과 임시 하트 아이콘입니다. 바꿀 곳: `app.json`, `public/manifest.webmanifest`, `src/app/+html.tsx`, `public/icons/`.
 - **약관·개인정보처리방침 내용**: 초안은 개발에서 만들되, 게시 전 법률 검토.
 - **얼굴 비교 서비스 선정**: Phase 9 시작 시.
+- **네이버 간편가입**: 기본 지원이 없어 별도 연동이 필요합니다. 베타 사용자 반응을 보고 결정.
 
 ## 알려진 한계
 
