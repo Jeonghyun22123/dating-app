@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { useMyPhotos, photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
 import { TrustCard } from '@/features/trust/trust-card';
+import { useWallet } from '@/features/wallet/api';
 import { signOut } from '@/lib/auth';
 import { useThemeColors } from '@/theme/theme-view';
 
@@ -24,6 +26,15 @@ export default function MyProfileScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const { data: profile } = useMyProfile();
+  // 하트 잔액은 하트 화면과 같은 곳(지갑)에서 읽고, 이 탭으로 돌아올 때마다 새로 받아옵니다.
+  // (관리자 지급, 스포트라이트·시그널 사용 등 다른 화면에서 바뀐 값이 바로 보이도록)
+  const wallet = useWallet();
+  const { refetch: refetchWallet } = wallet;
+  useFocusEffect(
+    useCallback(() => {
+      refetchWallet();
+    }, [refetchWallet]),
+  );
   const { data: photos } = useMyPhotos(profile?.id);
 
   if (!profile) return null;
@@ -42,7 +53,7 @@ export default function MyProfileScreen() {
             <Button title="관리자 페이지" variant="secondary" onPress={() => router.push('/admin')} />
           ) : null}
           <Button
-            title={`하트 ${profile.coin_balance}개 · 스포트라이트`}
+            title={`하트 ${wallet.data?.balance ?? profile.coin_balance}개 · 스포트라이트`}
             variant="secondary"
             onPress={() => router.push('/wallet')}
           />
