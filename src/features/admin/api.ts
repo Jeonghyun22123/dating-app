@@ -10,11 +10,26 @@ import { supabase } from '@/lib/supabase';
 import type { Gender, VerificationStatus } from '@/types/db';
 
 export type AdminStats = Record<
-  | 'users_total' | 'users_onboarded' | 'users_new_today' | 'users_new_7d' | 'users_active_24h' | 'users_banned'
-  | 'gender_female' | 'gender_male' | 'purpose_friend' | 'purpose_hobby' | 'purpose_serious'
-  | 'verified_approved' | 'selfies_pending' | 'photos_pending'
-  | 'matches_total' | 'matches_7d' | 'messages_7d' | 'reports_pending'
-  | 'sessions_24h' | 'avg_session_minutes_7d',
+  | 'users_total'
+  | 'users_onboarded'
+  | 'users_new_today'
+  | 'users_new_7d'
+  | 'users_active_24h'
+  | 'users_banned'
+  | 'gender_female'
+  | 'gender_male'
+  | 'purpose_friend'
+  | 'purpose_hobby'
+  | 'purpose_serious'
+  | 'verified_approved'
+  | 'selfies_pending'
+  | 'photos_pending'
+  | 'matches_total'
+  | 'matches_7d'
+  | 'messages_7d'
+  | 'reports_pending'
+  | 'sessions_24h'
+  | 'avg_session_minutes_7d',
   number
 >;
 
@@ -66,6 +81,9 @@ export type AdminUser = {
   report_count: number;
   /** 신뢰 점수 (0.0 ~ 5.0) */
   trust_score: number;
+  coin_balance: number;
+  /** 프리미엄이면 만료 시각 (무기한이면 'infinity'), 아니면 null */
+  premium_until: string | null;
 };
 
 const adminKey = ['admin'] as const;
@@ -157,6 +175,42 @@ export async function setBanned(userId: string, banned: boolean, reason?: string
     p_user_id: userId,
     p_banned: banned,
     p_reason: reason ?? null,
+  });
+  if (error) throw error;
+  await refreshAdmin();
+}
+
+/** 하트 지급(양수) 또는 회수(음수) */
+export async function grantHearts(userId: string, amount: number, note?: string) {
+  const { error } = await supabase.rpc('admin_grant_hearts', {
+    p_user: userId,
+    p_amount: amount,
+    p_note: note ?? null,
+  });
+  if (error) throw error;
+  await refreshAdmin();
+}
+
+/** 프리미엄 지정 (days = 0 이면 해제). 결제(Phase 8) 전 테스트용 */
+export async function setPremium(userId: string, days: number) {
+  const { error } = await supabase.rpc('admin_set_premium', { p_user: userId, p_days: days });
+  if (error) throw error;
+  await refreshAdmin();
+}
+
+export type Economy = {
+  daily_swipe_limit: number;
+  signal_heart_cost: number;
+  spotlight_heart_cost: number;
+  spotlight_minutes: number;
+};
+
+export async function updateEconomy(e: Economy) {
+  const { error } = await supabase.rpc('admin_update_economy', {
+    p_daily_swipe_limit: e.daily_swipe_limit,
+    p_signal_heart_cost: e.signal_heart_cost,
+    p_spotlight_heart_cost: e.spotlight_heart_cost,
+    p_spotlight_minutes: e.spotlight_minutes,
   });
   if (error) throw error;
   await refreshAdmin();

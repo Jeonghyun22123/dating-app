@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { matchesKey } from '@/features/chat/api';
 import type { TrustLevel } from '@/features/discover/api';
 import { signPhotoPaths } from '@/features/photos/api';
-import { refreshMyProfile } from '@/features/profile/api';
+import { refreshWallet } from '@/features/wallet/api';
 import { queryClient } from '@/lib/query-client';
 import { supabase } from '@/lib/supabase';
 import type { Purpose, VerificationStatus } from '@/types/db';
@@ -42,17 +42,17 @@ export async function sendSignal(
   userId: string,
   targetId: string,
   message: string,
-): Promise<{ matchId: string | null; remaining: number }> {
+): Promise<{ matchId: string | null; remaining: number; paidWith: 'credit' | 'hearts' }> {
   const { data, error } = await supabase.rpc('send_signal', { p_target: targetId, p_message: message.trim() });
   if (error) {
     if (error.code === 'P0002') throw new NoSignalsLeftError(error.message);
     throw error;
   }
-  const result = data as { match_id: string | null; remaining: number };
-  // 남은 횟수 표시를 갱신합니다.
-  refreshMyProfile(userId);
+  const result = data as { match_id: string | null; remaining: number; paid_with: 'credit' | 'hearts' };
+  // 남은 횟수와 하트 잔액 표시를 갱신합니다.
+  refreshWallet(userId);
   if (result.match_id) queryClient.invalidateQueries({ queryKey: matchesKey });
-  return { matchId: result.match_id, remaining: result.remaining };
+  return { matchId: result.match_id, remaining: result.remaining, paidWith: result.paid_with };
 }
 
 export async function fetchReceivedSignals(): Promise<ReceivedSignal[]> {

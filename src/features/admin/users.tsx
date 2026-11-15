@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
 
-import { formatDateTime, GENDER_LABEL, setBanned, useAdminUsers, type AdminUser } from './api';
+import {
+  formatDateTime,
+  GENDER_LABEL,
+  grantHearts,
+  setBanned,
+  setPremium,
+  useAdminUsers,
+  type AdminUser,
+} from './api';
 import { ActionButton, Badge, Card, ListState, useActionError } from './parts';
 import { useThemeColors } from '@/theme/theme-view';
 
@@ -31,6 +39,8 @@ function UserCard({ user }: { user: AdminUser }) {
           label={`신뢰 ${Number(user.trust_score).toFixed(1)}`}
           tone={user.trust_score >= 3 ? 'green' : 'neutral'}
         />
+        {user.premium_until ? <Badge label="프리미엄" tone="amber" /> : null}
+        <Badge label={`하트 ${user.coin_balance}`} tone="neutral" />
         {user.is_banned ? <Badge label="정지됨" tone="red" /> : null}
         {user.report_count > 0 ? (
           <Badge label={`신고 ${user.report_count}건`} tone={user.report_count >= 3 ? 'red' : 'neutral'} />
@@ -42,6 +52,30 @@ function UserCard({ user }: { user: AdminUser }) {
         {formatDateTime(user.last_active_at)}
       </Text>
       {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
+      {user.premium_until && user.premium_until !== 'infinity' ? (
+        <Text className="text-xs text-subtle">프리미엄 만료 {formatDateTime(user.premium_until)}</Text>
+      ) : null}
+      {/* 결제(Phase 8) 전 테스트용 지급 */}
+      <View className="flex-row flex-wrap justify-end gap-2">
+        <ActionButton
+          title="하트 +10"
+          onPress={() => run(() => grantHearts(user.id, 10, '테스트 지급'), fail)}
+        />
+        <ActionButton
+          title="하트 +50"
+          onPress={() => run(() => grantHearts(user.id, 50, '테스트 지급'), fail)}
+        />
+        {user.premium_until ? (
+          <ActionButton
+            title="프리미엄 해제"
+            tone="danger"
+            confirm
+            onPress={() => run(() => setPremium(user.id, 0), fail)}
+          />
+        ) : (
+          <ActionButton title="프리미엄 30일" onPress={() => run(() => setPremium(user.id, 30), fail)} />
+        )}
+      </View>
       {user.role !== 'admin' ? (
         <View className="flex-row justify-end">
           {user.is_banned ? (

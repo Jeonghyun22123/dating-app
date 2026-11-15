@@ -8,6 +8,7 @@ import { Screen } from '@/components/ui/screen';
 import { formatTime, useMatches, type MatchSummary } from '@/features/chat/api';
 import { useReceivedSignals } from '@/features/signals/api';
 import { ReceivedSignals } from '@/features/signals/received-signals';
+import { LikesTeaser } from '@/features/likes/likes-teaser';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeColors } from '@/theme/theme-view';
 
@@ -70,6 +71,7 @@ export default function MatchesScreen() {
 
   return (
     <Screen title="채팅">
+      <LikesTeaser />
       {myId ? <ReceivedSignals signals={received} myId={myId} /> : null}
       {matches.isPending ? (
         <View className="items-center py-24">

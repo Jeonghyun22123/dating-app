@@ -25,7 +25,12 @@ function ReviewCard({ item }: { item: SelfieReviewItem }) {
           <Text className="text-xs font-semibold text-muted">방금 찍은 셀카</Text>
           <View className="aspect-[3/4] overflow-hidden rounded-xl bg-field">
             {item.selfieUrl ? (
-              <Image source={{ uri: item.selfieUrl }} cachePolicy="none" style={{ flex: 1 }} contentFit="cover" />
+              <Image
+                source={{ uri: item.selfieUrl }}
+                cachePolicy="none"
+                style={{ flex: 1 }}
+                contentFit="cover"
+              />
             ) : (
               <View className="flex-1 items-center justify-center px-3">
                 <Text className="text-center text-sm text-muted">셀카 파일이 없어요</Text>

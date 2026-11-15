@@ -20,6 +20,14 @@ import { refreshDiscover, swipeProfile, useDiscover, type DiscoverProfile } from
 import { DeckCard, type DeckAction } from '@/features/discover/deck-card';
 import { photoSource } from '@/features/photos/api';
 import { useMyProfile } from '@/features/profile/api';
+import {
+  formatRemaining,
+  quotaKey,
+  refreshWallet,
+  useSwipeQuota,
+  type SwipeQuota,
+} from '@/features/wallet/api';
+import { queryClient } from '@/lib/query-client';
 import { PURPOSES } from '@/features/profile/constants';
 import { SafetySheet } from '@/features/safety/safety-sheet';
 import { SignalComposeSheet } from '@/features/signals/compose-sheet';
@@ -50,6 +58,8 @@ type CardProps = {
   profile: DiscoverProfile;
   myHobbies: string[];
   onOpenSafety: () => void;
+  /** 카드 왼쪽 위에 보여줄 안내 (예: "오늘 12번 남음"). 맨 위 카드에만 */
+  status?: string | null;
   onPass: () => void;
   onLike: () => void;
   /** 시그널 작성 창 열기 */
@@ -78,6 +88,7 @@ function ProfileCard({
   signalCredits,
   disabled,
   revealed,
+  status,
 }: CardProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const photos = profile.photoUrls;
@@ -205,7 +216,13 @@ function ProfileCard({
             </View>
           ) : null}
           <View pointerEvents="box-none" className="flex-row items-center justify-between">
-            <View />
+            {status ? (
+              <View pointerEvents="none" className="rounded-full bg-black/35 px-3 py-1.5">
+                <Text className="text-sm font-semibold text-white">{status}</Text>
+              </View>
+            ) : (
+              <View />
+            )}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="신고 또는 차단"
@@ -330,6 +347,37 @@ function ProfileCard({
   );
 }
 
+/** 카드 왼쪽 위 안내: 남은 횟수, 스포트라이트 사용 중 */
+function statusText(quota: SwipeQuota | undefined, spotlightUntil: string | null): string | null {
+  const parts: string[] = [];
+  if (spotlightUntil && new Date(spotlightUntil).getTime() > Date.now()) {
+    parts.push(`스포트라이트 ${formatRemaining(spotlightUntil)}`);
+  }
+  if (quota && !quota.unlimited && quota.remaining !== null) parts.push(`오늘 ${quota.remaining}번 남음`);
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/** 무료 회원이 오늘의 둘러보기 횟수를 다 썼을 때 */
+function OutOfSwipes({ resetsAt, onShowLikes }: { resetsAt: string | null; onShowLikes: () => void }) {
+  return (
+    <View className="flex-1 items-center justify-center gap-5 px-6">
+      <Text className="text-center text-xl font-bold text-fg">오늘의 둘러보기를 모두 사용했어요</Text>
+      <Text className="text-center text-base leading-6 text-muted">
+        {resetsAt
+          ? `${formatRemaining(resetsAt)} 뒤(밤 12시)에 다시 채워져요. `
+          : '밤 12시에 다시 채워져요. '}
+        그동안 나에게 온 관심과 시그널을 확인해 보세요.
+      </Text>
+      <View className="w-full gap-3">
+        <Button title="받은 관심·시그널 보기" onPress={onShowLikes} />
+      </View>
+      <Text className="text-center text-sm leading-5 text-subtle">
+        프리미엄 회원은 횟수 제한 없이 둘러볼 수 있어요 (준비 중).
+      </Text>
+    </View>
+  );
+}
+
 /**
  * 이미 결정한(넘긴) 프로필 기록.
  *   'pending' = 서버에 저장하는 중, 숫자 = 저장이 끝난 시각(ms)
@@ -343,6 +391,9 @@ export default function DiscoverScreen() {
   const router = useRouter();
   const { data: me } = useMyProfile();
   const discover = useDiscover();
+  const quota = useSwipeQuota();
+  // 무료 회원이 오늘 횟수를 다 쓰면 카드 대신 안내 화면을 보여줍니다.
+  const outOfSwipes = !!quota.data && !quota.data.unlimited && (quota.data.remaining ?? 0) <= 0;
   const [handled, setHandled] = useState<Handled>({});
   const [error, setError] = useState<string | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -390,6 +441,13 @@ export default function DiscoverScreen() {
     }
     setHandled((state) => ({ ...state, [profile.id]: 'pending' }));
     const remaining = deck.length - 1;
+    // 남은 횟수 표시를 먼저 줄여 둡니다 (정확한 값은 저장 후 서버에서 다시 받아옵니다).
+    const userId = me?.id;
+    queryClient.setQueryData<SwipeQuota>(quotaKey(userId), (q) =>
+      q && !q.unlimited && q.remaining !== null
+        ? { ...q, remaining: Math.max(q.remaining - 1, 0), used: q.used + 1 }
+        : q,
+    );
     try {
       const matchId = await swipeProfile(profile.id, action);
       track(action === 'like' ? AnalyticsEvent.SwipeLike : AnalyticsEvent.SwipePass);
@@ -400,10 +458,17 @@ export default function DiscoverScreen() {
       }
       // 남은 카드가 적으면 새로 받아옵니다 (저장이 끝난 뒤라서 방금 넘긴 사람은 빠져서 옵니다).
       if (remaining <= 2) refreshDiscover();
-    } catch {
+      if (userId) queryClient.invalidateQueries({ queryKey: quotaKey(userId) });
+    } catch (e) {
       positionOf(profile.id).value = 0;
       setHandled(({ [profile.id]: _failed, ...rest }) => rest);
-      setError('처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      if ((e as { code?: string }).code === 'P0003') {
+        // 오늘 횟수를 다 썼습니다 → 안내 화면으로 바뀝니다.
+        if (userId) refreshWallet(userId);
+      } else {
+        if (userId) queryClient.invalidateQueries({ queryKey: quotaKey(userId) });
+        setError('처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
+      }
     }
   }
 
@@ -418,7 +483,9 @@ export default function DiscoverScreen() {
     // 위쪽 안전 영역만 띄웁니다. 아래는 탭 바가 차지합니다.
     <SafeAreaView edges={['top']} className="flex-1 items-center bg-bg">
       <View className="w-full max-w-md flex-1 px-2 pb-2 pt-1">
-        {current ? (
+        {outOfSwipes ? (
+          <OutOfSwipes resetsAt={quota.data?.resets_at ?? null} onShowLikes={() => router.push('/matches')} />
+        ) : current ? (
           // 카드 두 장(맨 위 + 바로 다음)을 겹쳐 그립니다. key 가 프로필 id 라서, 맨 위 카드가 빠지면
           // 뒤에 있던 카드가 새로 만들어지지 않고 그대로 맨 위 카드가 됩니다 (깜빡임 없음).
           <View className="flex-1">
@@ -442,6 +509,7 @@ export default function DiscoverScreen() {
                         onLike={() => decide('like')}
                         onSignal={isTop ? () => setSignalOpen(true) : noop}
                         signalCredits={me?.signal_credits ?? 0}
+                        status={isTop ? statusText(quota.data, me?.spotlight_until ?? null) : null}
                         revealed={isTop}
                       />
                     );

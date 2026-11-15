@@ -116,6 +116,11 @@ npx supabase functions deploy delete-account --use-api
 
 `main` 에 올라간 코드는 Vercel 이 자동으로 다시 배포합니다.
 
+### Phase 7 (하트 · 스포트라이트 · 하루 횟수 제한 · 받은 관심)
+
+SQL Editor 에 [`supabase_phase7.sql`](./supabase_phase7.sql) 실행 (**필수**). 결제 전이라 하트와 프리미엄은
+관리자 페이지 > 회원에서 테스트용으로 지급하고, 횟수·가격은 관리자 페이지 > 설정에서 바꿉니다.
+
 ### 시그널 (메시지와 함께 보내는 대화 신청)
 
 SQL Editor 에 [`supabase_signal.sql`](./supabase_signal.sql) 전체를 붙여넣고 실행합니다. **필수**입니다 (Phase 5 SQL 다음에 실행).
@@ -149,6 +154,8 @@ src/
     consent/      약관 동의 화면과 약관 초안
     account/      비밀번호 변경 화면
     sessions/     접속·체류 시간 기록
+    wallet/       하트 지갑 · 하루 횟수 · 스포트라이트
+    likes/        받은 관심
   theme/          화면 테마(화이트/다크/블랙 & 핑크) 정의와 적용
   lib/            env, supabase, auth, analytics(PostHog), query-client
   providers/      app-providers.tsx
@@ -165,6 +172,7 @@ supabase_phase4.sql           Phase 4 관리자 함수 + 작업 기록
 supabase_phase5.sql           Phase 5 만남 조건 · 신뢰 점수 · 관리자 설정
 supabase_signal.sql           시그널 (횟수, 보내기, 받은 시그널, 수락 · 거절)
 supabase_phase6.sql           Phase 6 약관 동의 · 탈퇴 대비 · 접속 기록
+supabase_phase7.sql           Phase 7 하트 · 하루 횟수 제한 · 스포트라이트 · 받은 관심
 supabase_settings.sql         알림 수신 설정
 supabase_seed_test_users.sql  개발용 가짜 프로필
 supabase_seed_reset.sql       개발용: 가짜 프로필 테스트 기록 초기화

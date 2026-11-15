@@ -41,6 +41,11 @@ export default function MyProfileScreen() {
           {profile.role === 'admin' ? (
             <Button title="관리자 페이지" variant="secondary" onPress={() => router.push('/admin')} />
           ) : null}
+          <Button
+            title={`하트 ${profile.coin_balance}개 · 스포트라이트`}
+            variant="secondary"
+            onPress={() => router.push('/wallet')}
+          />
           <Button title="프로필 수정" onPress={() => router.push('/edit-profile')} />
           <Button title="로그아웃" variant="secondary" onPress={signOut} />
         </>

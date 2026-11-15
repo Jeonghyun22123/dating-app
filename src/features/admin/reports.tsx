@@ -4,7 +4,14 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { Chip } from '@/components/ui/chip';
 import { REPORT_REASONS } from '@/features/safety/api';
 
-import { formatDateTime, resolveReport, setBanned, useAdminReports, type AdminReport, type ReportStatus } from './api';
+import {
+  formatDateTime,
+  resolveReport,
+  setBanned,
+  useAdminReports,
+  type AdminReport,
+  type ReportStatus,
+} from './api';
 import { ActionButton, Badge, Card, ListState, useActionError } from './parts';
 import { useThemeColors } from '@/theme/theme-view';
 
@@ -35,7 +42,9 @@ function Snapshot({ report }: { report: AdminReport }) {
         return (
           <View key={message.id} className="gap-0.5">
             <Text className={`text-xs font-semibold ${fromReported ? 'text-red-600' : 'text-muted'}`}>
-              {fromReported ? `${report.reported_nickname} (피신고자)` : `${report.reporter_nickname ?? '탈퇴한 사용자'} (신고자)`}
+              {fromReported
+                ? `${report.reported_nickname} (피신고자)`
+                : `${report.reporter_nickname ?? '탈퇴한 사용자'} (신고자)`}
               {' · '}
               {formatDateTime(message.created_at)}
             </Text>
@@ -66,9 +75,13 @@ function ReportCard({ report }: { report: AdminReport }) {
 
       <View className="flex-row flex-wrap items-center gap-2">
         <Text className="text-sm text-muted">
-          {report.reporter_nickname ?? '탈퇴한 사용자'} → <Text className="font-semibold">{report.reported_nickname}</Text>
+          {report.reporter_nickname ?? '탈퇴한 사용자'} →{' '}
+          <Text className="font-semibold">{report.reported_nickname}</Text>
         </Text>
-        <Badge label={`누적 신고 ${report.reported_report_count}건`} tone={report.reported_report_count >= 3 ? 'red' : 'neutral'} />
+        <Badge
+          label={`누적 신고 ${report.reported_report_count}건`}
+          tone={report.reported_report_count >= 3 ? 'red' : 'neutral'}
+        />
         {report.reported_is_banned ? <Badge label="정지됨" tone="red" /> : null}
       </View>
 
@@ -130,7 +143,12 @@ export function Reports() {
     <View className="gap-3">
       <View className="flex-row flex-wrap gap-2">
         {FILTERS.map((item) => (
-          <Chip key={item.value} label={item.label} selected={filter === item.value} onPress={() => setFilter(item.value)} />
+          <Chip
+            key={item.value}
+            label={item.label}
+            selected={filter === item.value}
+            onPress={() => setFilter(item.value)}
+          />
         ))}
       </View>
       <ListState

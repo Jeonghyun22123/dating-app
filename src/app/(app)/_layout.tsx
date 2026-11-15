@@ -38,6 +38,8 @@ export default function AppLayout() {
       <Stack.Screen name="edit-location" />
       <Stack.Screen name="change-password" />
       <Stack.Screen name="delete-account" />
+      <Stack.Screen name="wallet" />
+      <Stack.Screen name="likes" />
     </Stack>
   );
 }
