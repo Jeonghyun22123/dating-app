@@ -1,4 +1,6 @@
 import 'react-native-url-polyfill/auto';
+// 간편 로그인 실패 정보를 supabase 가 주소를 건드리기 전에 먼저 읽어 둡니다.
+import './oauth-return';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';

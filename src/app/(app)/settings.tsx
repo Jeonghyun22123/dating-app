@@ -15,6 +15,7 @@ import {
 import { formatAgeRange, GENDER_CHOICES, preferencesFromProfile } from '@/features/preferences/api';
 import { useMyProfile } from '@/features/profile/api';
 import { signOut } from '@/lib/auth';
+import { hasPassword, linkedProviders, PROVIDER_LABEL } from '@/features/social/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeStore } from '@/stores/theme-store';
 import { useThemeColors } from '@/theme/theme-view';
@@ -144,7 +145,11 @@ export default function SettingsScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const userId = useAuthStore((s) => s.session?.user.id);
-  const email = useAuthStore((s) => s.session?.user.email);
+  const user = useAuthStore((s) => s.session?.user);
+  const email = user?.email;
+  const loginMethods = linkedProviders(user)
+    .map((provider) => PROVIDER_LABEL[provider as keyof typeof PROVIDER_LABEL] ?? provider)
+    .join(', ');
   const { themeId, setTheme } = useThemeStore();
   const version = Constants.expoConfig?.version ?? '';
   const { data: profile } = useMyProfile();
@@ -194,9 +199,15 @@ export default function SettingsScreen() {
       <Section title="계정">
         <View className="border-b border-line px-4 py-3">
           <Text className="text-sm text-muted">로그인한 이메일</Text>
-          <Text className="text-base text-fg">{email}</Text>
+          <Text className="text-base text-fg">{email || '이메일 정보 없음'}</Text>
+          {loginMethods ? (
+            <Text className="mt-1 text-sm text-subtle">로그인 방식: {loginMethods}</Text>
+          ) : null}
         </View>
-        <Row label="비밀번호 변경" onPress={() => router.push('/change-password')} />
+        {/* 간편가입만 한 계정은 비밀번호가 없어서 변경 메뉴를 숨깁니다 */}
+        {hasPassword(user) ? (
+          <Row label="비밀번호 변경" onPress={() => router.push('/change-password')} />
+        ) : null}
         <Row label="회원 탈퇴" onPress={() => router.push('/delete-account')} danger />
       </Section>
 

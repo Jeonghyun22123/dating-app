@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { TextLink } from '@/components/ui/text-link';
+import { SocialButtons } from '@/features/social/social-buttons';
 import { ErrorText, Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { AnalyticsEvent, track } from '@/lib/analytics';
@@ -18,7 +19,8 @@ export default function SignUpScreen() {
 
   async function handleSubmit() {
     if (!isValidEmail(email)) return setError('이메일 주소를 정확히 입력해 주세요.');
-    if (password.length < PASSWORD_MIN) return setError(`비밀번호는 ${PASSWORD_MIN}자 이상으로 설정해 주세요.`);
+    if (password.length < PASSWORD_MIN)
+      return setError(`비밀번호는 ${PASSWORD_MIN}자 이상으로 설정해 주세요.`);
     if (password !== passwordConfirm) return setError('비밀번호가 서로 일치하지 않습니다.');
     setError(null);
     setLoading(true);
@@ -80,6 +82,7 @@ export default function SignUpScreen() {
       </View>
       <View className="gap-4">
         <Button title="가입하기" onPress={handleSubmit} loading={loading} />
+        <SocialButtons />
         <TextLink prompt="이미 계정이 있나요?" label="로그인" href="/sign-in" />
       </View>
     </Screen>

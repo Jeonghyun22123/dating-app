@@ -5,7 +5,7 @@
 
 표기: ✅ 완료 · 🟡 코드는 있으나 조건 미충족 · ⬜ 예정
 
-마지막 갱신: 웹 배포 완료 (https://dating-app-nu-virid.vercel.app)
+마지막 갱신: 구글 간편가입 추가 (카카오는 Supabase 설정만 남음)
 
 ---
 
@@ -20,7 +20,7 @@
 | Phase 5 | 만남 조건, 신뢰 점수, 셀카 검증 방식 설정 | ✅ |
 | 추가 | 시그널 (Phase 7 에서 앞당김), 설정 화면 (테마·알림) | ✅ |
 | Phase 6 | 계정 관리, 약관·동의, 웹 배포 | ✅ |
-| **Phase 6.5** | **간편가입 (카카오 · 구글)** — 웹 배포 후 | ⬜ **다음** |
+| **Phase 6.5** | **간편가입 (카카오 · 구글)** | 🟡 구글 완료 · 카카오는 키 등록만 남음 |
 | Phase 7 | 하트, 스포트라이트, 무료 횟수 제한 | ⬜ |
 | Phase 8 | 결제 (Toss · RevenueCat) | ⬜ |
 | Phase 9 | 본인 확인 강화 (PortOne 성인인증 + 자동 얼굴 비교) | ⬜ |
@@ -122,14 +122,16 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 | 네이버 | 기본 목록에 없음 (별도 연동 필요) | 보류 | 사용자 요청이 많으면 추가 |
 
 사용자 작업 (각 서비스 개발자 사이트)
-- [ ] 구글: Google Cloud Console 에서 OAuth 동의 화면 + "OAuth 클라이언트 ID(웹)" 생성,
+- [x] 구글: Google Cloud Console 에서 OAuth 동의 화면 + "OAuth 클라이언트 ID(웹)" 생성,
       리디렉션 주소 `https://<프로젝트ID>.supabase.co/auth/v1/callback` 등록 → Supabase **Authentication > Sign In / Providers > Google** 에 Client ID·Secret 입력
 - [ ] 카카오: Kakao Developers 에서 앱 생성 + 카카오 로그인 활성화, 같은 리디렉션 주소 등록, 동의 항목 설정
       → Supabase **Kakao** 항목에 REST API 키·Client Secret 입력
   - 이메일을 필수로 받으려면 사업자 정보 등록(비즈 앱 전환)이 필요할 수 있음
 - 각 사이트의 메뉴 이름은 자주 바뀌므로, 진행할 때 화면을 보며 함께 설정
 
-개발 작업
+개발 작업 ✅ (구글로 검증, 카카오는 같은 코드로 동작)
+- Supabase 에서 켜진 방식만 버튼으로 표시 → **카카오는 Supabase 에 키를 넣고 켜기만 하면 버튼이 자동으로 나타남**
+- 로그인 취소·실패 시 안내 문구
 - 로그인·회원가입 화면에 "카카오로 시작하기", "Google로 시작하기" 버튼
 - 간편가입 후에도 기존 흐름 그대로: 약관 동의 → 성별·생년월일 → 프로필 → 사진 → 셀카
   (소셜 계정은 생년월일·성별을 주지 않는 경우가 많아 성인 확인은 온보딩에서 계속 받음)
