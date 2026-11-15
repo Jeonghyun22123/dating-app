@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -392,6 +392,13 @@ export default function DiscoverScreen() {
   const { data: me } = useMyProfile();
   const discover = useDiscover();
   const quota = useSwipeQuota();
+  // 이 탭으로 돌아올 때마다 남은 횟수를 새로 받아옵니다 (관리자가 기준을 바꾼 경우, 자정이 지난 경우 등).
+  const { refetch: refetchQuota } = quota;
+  useFocusEffect(
+    useCallback(() => {
+      refetchQuota();
+    }, [refetchQuota]),
+  );
   // 무료 회원이 오늘 횟수를 다 쓰면 카드 대신 안내 화면을 보여줍니다.
   const outOfSwipes = !!quota.data && !quota.data.unlimited && (quota.data.remaining ?? 0) <= 0;
   const [handled, setHandled] = useState<Handled>({});

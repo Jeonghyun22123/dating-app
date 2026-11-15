@@ -226,7 +226,11 @@ export async function updateEconomy(e: Economy) {
     p_spotlight_minutes: e.spotlight_minutes,
   });
   if (error) throw error;
-  await refreshAdmin();
+  // 횟수·가격이 바뀌면 둘러보기의 남은 횟수, 하트 화면의 가격, 추천 목록도 새 기준으로 다시 받아옵니다.
+  await Promise.all([
+    refreshAfterGrant(),
+    queryClient.invalidateQueries({ queryKey: ['discover'] }),
+  ]);
 }
 
 export function formatDateTime(iso: string | null): string {
