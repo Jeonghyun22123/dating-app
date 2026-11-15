@@ -5,7 +5,7 @@
 
 표기: ✅ 완료 · 🟡 코드는 있으나 조건 미충족 · ⬜ 예정
 
-마지막 갱신: 간편가입(카카오·구글·애플·네이버) 계획 추가
+마지막 갱신: 웹 배포 완료 (https://dating-app-nu-virid.vercel.app)
 
 ---
 
@@ -19,7 +19,7 @@
 | Phase 4 | 관리자 페이지 | ✅ |
 | Phase 5 | 만남 조건, 신뢰 점수, 셀카 검증 방식 설정 | ✅ |
 | 추가 | 시그널 (Phase 7 에서 앞당김), 설정 화면 (테마·알림) | ✅ |
-| Phase 6 | 계정 관리, 약관·동의, 웹 배포 준비 | ✅ (배포 실행만 남음) |
+| Phase 6 | 계정 관리, 약관·동의, 웹 배포 | ✅ |
 | **Phase 6.5** | **간편가입 (카카오 · 구글)** — 웹 배포 후 | ⬜ **다음** |
 | Phase 7 | 하트, 스포트라이트, 무료 횟수 제한 | ⬜ |
 | Phase 8 | 결제 (Toss · RevenueCat) | ⬜ |
@@ -68,8 +68,11 @@
 - 접속·체류 시간 기록(서버 시각 기준), 관리자 대시보드에 접속 수·평균 체류 시간
 - (`supabase_phase6.sql`, Edge Function `delete-account`)
 
+배포
+- [x] Vercel 배포: **https://dating-app-nu-virid.vercel.app** (`main` 에 올리면 자동 재배포)
+- [x] `EXPO_PUBLIC_SITE_URL`, Supabase URL Configuration 등록 → 메일 인증·비밀번호 재설정 링크 정상 동작
+
 남은 일 (사용자 작업)
-- [ ] Vercel 가입·연결, 환경변수 등록, Supabase URL Configuration 등록 (README "웹 배포" 참고)
 - [ ] 약관 대괄호 항목 채우기, 법률 검토
 - [ ] 베타 공개 전: Sightengine 키 등록, "Confirm email" 켜기, 셀카·신고 심사 담당 정하기
 - [ ] 앱 이름·정식 아이콘 정하기 (지금은 "Dating App"과 임시 하트 아이콘)
@@ -109,7 +112,7 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 ## 앞으로 할 단계
 
 ### Phase 6.5 · 간편가입 (카카오 · 구글) ⬜ (다음)
-선행 조건: **웹 배포 완료** (배포 주소가 있어야 로그인 후 돌아올 주소를 깔끔하게 설정할 수 있음)
+선행 조건: 웹 배포 ✅ 완료. 구글·카카오 개발자 사이트에서 키 발급 (아래 사용자 작업)
 
 | 서비스 | 지원 | 시점 | 비고 |
 |---|---|---|---|
