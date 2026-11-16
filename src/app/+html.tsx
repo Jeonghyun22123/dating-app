@@ -30,7 +30,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Dating App" />
-        {/* 시계 줄을 투명하게 두고 앱 화면을 그 뒤까지 그립니다 (시계 글자는 흰색). 기본 테마가 다크라 어두운 바탕에 맞춥니다 */}
+        {/* 시계 줄을 투명하게 두고 앱 화면을 그 뒤까지 그립니다 (시계 글자색은 iOS 가 바탕 밝기에 맞춤) */}
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         {/* 앱이 그려지기 전에 흰 화면이 번쩍이지 않도록 */}
         <style>{'html, body { background-color: #111113; }'}</style>
