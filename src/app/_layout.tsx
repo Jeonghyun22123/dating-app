@@ -16,6 +16,7 @@ import { AppProviders } from '@/providers/app-providers';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeStore } from '@/stores/theme-store';
 import { ThemeView, useThemeColors } from '@/theme/theme-view';
+import { useWebStatusBar } from '@/theme/use-web-status-bar';
 
 /**
  * 로그인/온보딩 상태에 따라 들어갈 수 있는 화면 묶음을 나눕니다.
@@ -146,6 +147,8 @@ function RootNavigator() {
 /** 어두운 테마에서는 상단 상태바(시계·배터리) 글자를 밝게 합니다. */
 function ThemedStatusBar() {
   const colors = useThemeColors();
+  // 웹(홈 화면에 추가한 웹앱 포함)은 시계 줄 색을 따로 맞춥니다.
+  useWebStatusBar();
   return <StatusBar style={colors.dark ? 'light' : 'dark'} />;
 }
 

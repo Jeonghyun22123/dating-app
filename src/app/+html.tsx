@@ -22,14 +22,18 @@ export default function Root({ children }: PropsWithChildren) {
         />
         <title>Dating App</title>
         <meta name="description" content="취미와 동네로 만나는 신뢰 기반 만남" />
-        <meta name="theme-color" content="#f43f5e" />
+        {/* 위쪽 줄 색. 앱이 켜지면 테마에 맞게 바꿉니다 (theme/use-web-status-bar.ts) */}
+        <meta name="theme-color" content="#111113" />
         <link rel="manifest" href="/manifest.webmanifest" />
         {/* iOS 홈 화면 추가용 */}
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Dating App" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        {/* 시계 줄을 투명하게 두고 앱 화면을 그 뒤까지 그립니다 (시계 글자는 흰색). 기본 테마가 다크라 어두운 바탕에 맞춥니다 */}
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        {/* 앱이 그려지기 전에 흰 화면이 번쩍이지 않도록 */}
+        <style>{'html, body { background-color: #111113; }'}</style>
         {/* 화면 전체 스크롤 대신 앱 안의 스크롤만 쓰도록 맞춥니다 (Expo 기본 설정) */}
         <ScrollViewStyleReset />
         {headNodes}
