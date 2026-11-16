@@ -105,6 +105,7 @@ async function refreshAfterGrant() {
 export function useAdminStats() {
   return useQuery({
     queryKey: [...adminKey, 'stats'],
+    refetchOnMount: 'always',
     queryFn: async () => {
       const { data, error } = await supabase.rpc('admin_stats');
       if (error) throw error;
@@ -126,6 +127,7 @@ async function signSelfie(userId: string): Promise<string | null> {
 export function useSelfieQueue() {
   return useQuery({
     queryKey: [...adminKey, 'selfies'],
+    refetchOnMount: 'always',
     queryFn: async (): Promise<SelfieReviewItem[]> => {
       const { data, error } = await supabase.rpc('admin_selfie_queue');
       if (error) throw error;
@@ -140,6 +142,104 @@ export function useSelfieQueue() {
       );
     },
   });
+}
+
+export type PhotoChangeItem = {
+  id: string;
+  nickname: string;
+  age: number;
+  gender: Gender;
+  neighborhood_name: string | null;
+  requested_at: string | null;
+  current_paths: string[];
+  new_paths: string[];
+  /** 요청하면서 방금 찍은 셀카 (파일이 없으면 null) */
+  selfieUrl: string | null;
+  /** 지금 공개 중인 사진 */
+  currentUrls: string[];
+  /** 검토를 기다리는 새 사진 */
+  newUrls: string[];
+};
+
+/** 사진수정 심사 목록: 회원이 새로 올린 사진과 방금 찍은 셀카, 기존 사진을 함께 불러옵니다. */
+export function usePhotoChangeQueue() {
+  return useQuery({
+    queryKey: [...adminKey, 'photo-changes'],
+    // 요청은 회원 쪽에서 생기므로 관리자 화면을 열 때마다 새로 받아옵니다.
+    refetchOnMount: 'always',
+    queryFn: async (): Promise<PhotoChangeItem[]> => {
+      const { data, error } = await supabase.rpc('admin_photo_change_queue');
+      if (error) throw error;
+      const rows = (data ?? []) as Omit<PhotoChangeItem, 'selfieUrl' | 'currentUrls' | 'newUrls'>[];
+      const urls = await signPhotoPaths(rows.flatMap((row) => [...row.current_paths, ...row.new_paths]));
+      return Promise.all(
+        rows.map(async (row) => ({
+          ...row,
+          selfieUrl: await signSelfie(row.id),
+          currentUrls: row.current_paths.flatMap((path) => urls.get(path) ?? []),
+          newUrls: row.new_paths.flatMap((path) => urls.get(path) ?? []),
+        })),
+      );
+    },
+  });
+}
+
+/**
+ * 사진 변경 요청 승인/반려. 승인하면 새 사진이 한 번에 공개되고, 반려하면 기존 사진이 유지됩니다.
+ * note 는 반려 사유로 회원에게 보입니다. 서버가 판정과 동시에 셀카 파일을 삭제합니다.
+ */
+export async function reviewPhotoChange(userId: string, approve: boolean, note?: string) {
+  const { error } = await supabase.functions.invoke('admin-review-selfie', {
+    body: { kind: 'photo_change', user_id: userId, approve, note },
+  });
+  if (error) throw error;
+  await Promise.all([
+    refreshAdmin(),
+    // 관리자가 자기 계정의 요청을 처리한 경우 내 프로필에도 바로 반영되도록
+    queryClient.invalidateQueries({ queryKey: ['profile'] }),
+    queryClient.invalidateQueries({ queryKey: ['profile-photos'] }),
+  ]);
+}
+
+export type ReviewTarget = 'signup' | 'photo_change';
+
+export type AdminSettings = {
+  economy?: Economy;
+  /** 신규회원 심사 방식. 'auto' = AI 먼저 */
+  selfie_verification: { mode: 'manual' | 'auto'; auto_approve_threshold: number };
+  /** 사진수정 심사 방식 */
+  photo_review?: { mode: 'manual' | 'ai' };
+  face_compare: { available: boolean };
+};
+
+const settingsKey = [...adminKey, 'settings'] as const;
+
+export function useAdminSettings() {
+  return useQuery({
+    queryKey: settingsKey,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('admin_get_settings');
+      if (error) throw error;
+      return data as AdminSettings;
+    },
+  });
+}
+
+/** 해당 심사가 'AI 먼저' 방식인지 */
+export function isAiFirst(settings: AdminSettings | undefined, target: ReviewTarget) {
+  return target === 'signup'
+    ? settings?.selfie_verification?.mode === 'auto'
+    : settings?.photo_review?.mode === 'ai';
+}
+
+/** 심사 방식 변경: ai=true 면 AI 가 먼저 보고 통과하면 바로 반영, false 면 관리자가 전부 직접 승인. */
+export async function setReviewMode(target: ReviewTarget, ai: boolean) {
+  const { data, error } = await supabase.rpc('admin_set_review_mode', {
+    p_target: target,
+    p_mode: ai ? 'ai' : 'manual',
+  });
+  if (error) throw error;
+  queryClient.setQueryData(settingsKey, data as AdminSettings);
 }
 
 /** 승인/반려. 서버가 판정과 동시에 셀카 파일을 삭제합니다. */
@@ -227,10 +327,7 @@ export async function updateEconomy(e: Economy) {
   });
   if (error) throw error;
   // 횟수·가격이 바뀌면 둘러보기의 남은 횟수, 하트 화면의 가격, 추천 목록도 새 기준으로 다시 받아옵니다.
-  await Promise.all([
-    refreshAfterGrant(),
-    queryClient.invalidateQueries({ queryKey: ['discover'] }),
-  ]);
+  await Promise.all([refreshAfterGrant(), queryClient.invalidateQueries({ queryKey: ['discover'] })]);
 }
 
 export function formatDateTime(iso: string | null): string {

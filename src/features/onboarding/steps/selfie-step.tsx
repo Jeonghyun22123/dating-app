@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { ErrorText, Screen } from '@/components/ui/screen';
-import { moderationMessage, submitSelfie } from '@/features/photos/api';
+import { moderationMessage, submitSelfie, type ModerationResult } from '@/features/photos/api';
 import { refreshMyProfile } from '@/features/profile/api';
 
 /**
@@ -15,11 +15,23 @@ export function SelfieStep({
   userId,
   progress,
   onDone,
+  title = '실시간 셀카로 본인 확인',
+  subtitle = '프로필 사진이 본인인지 확인하기 위한 절차예요. 촬영한 셀카는 프로필에 공개되지 않고, 확인이 끝나는 즉시 삭제됩니다.',
+  submit,
+  onBack,
 }: {
   userId: string;
   progress?: string;
   /** 제출 성공 후 호출 (온보딩 밖에서 다시 제출할 때 화면을 닫는 용도) */
-  onDone?: () => void;
+  onDone?: (result: ModerationResult) => void;
+  title?: string;
+  subtitle?: string;
+  /**
+   * 셀카를 다른 용도(사진 변경 요청)로 제출할 때 지정합니다.
+   * 지정하면 '검토 대기(pending)' 결과도 성공으로 보고 onDone 을 부릅니다.
+   */
+  submit?: (uri: string) => Promise<ModerationResult>;
+  onBack?: () => void;
 }) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -34,14 +46,14 @@ export function SelfieStep({
       const picture = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
       if (!picture?.uri) throw new Error('capture_failed');
 
-      const result = await submitSelfie(userId, picture.uri);
+      const result = await (submit ? submit(picture.uri) : submitSelfie(userId, picture.uri));
       if (result.status === 'rejected') {
         setError(moderationMessage(result.reason));
-      } else if (result.status === 'pending') {
+      } else if (result.status === 'pending' && !submit) {
         setError('지금은 인증을 처리할 수 없어요. 잠시 후 다시 시도해 주세요.');
       } else {
         await refreshMyProfile(userId);
-        onDone?.();
+        onDone?.(result);
       }
     } catch (e) {
       setError(
@@ -59,8 +71,9 @@ export function SelfieStep({
   return (
     <Screen
       progress={progress}
-      title="실시간 셀카로 본인 확인"
-      subtitle="프로필 사진이 본인인지 확인하기 위한 절차예요. 촬영한 셀카는 프로필에 공개되지 않고, 확인이 끝나는 즉시 삭제됩니다."
+      title={title}
+      subtitle={subtitle}
+      onBack={onBack}
       footer={
         <>
           <ErrorText>{error}</ErrorText>
@@ -84,7 +97,9 @@ export function SelfieStep({
             facing="front"
             mirror
             onCameraReady={() => setCameraReady(true)}
-            onMountError={() => setError('카메라를 열지 못했어요. 다른 앱이 카메라를 쓰고 있지 않은지 확인해 주세요.')}
+            onMountError={() =>
+              setError('카메라를 열지 못했어요. 다른 앱이 카메라를 쓰고 있지 않은지 확인해 주세요.')
+            }
           />
         ) : (
           <View className="flex-1 items-center justify-center px-8">

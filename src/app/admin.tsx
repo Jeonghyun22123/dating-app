@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useAdminStats } from '@/features/admin/api';
+import { useAdminStats, usePhotoChangeQueue } from '@/features/admin/api';
 import { Dashboard } from '@/features/admin/dashboard';
 import { Reports } from '@/features/admin/reports';
-import { SelfieQueue } from '@/features/admin/selfie-queue';
+import { PhotoChangeReview, SignupReview } from '@/features/admin/review-queue';
 import { AdminSettingsSection } from '@/features/admin/settings';
 import { Users } from '@/features/admin/users';
 
-type Section = 'dashboard' | 'selfies' | 'reports' | 'users' | 'settings';
+type Section = 'dashboard' | 'signup' | 'photos' | 'reports' | 'users' | 'settings';
 
 /**
  * 관리자 페이지 (/admin).
@@ -21,10 +21,12 @@ export default function AdminScreen() {
   const router = useRouter();
   const [section, setSection] = useState<Section>('dashboard');
   const { data: stats } = useAdminStats();
+  const { data: photoChanges } = usePhotoChangeQueue();
 
   const tabs: { value: Section; label: string; count?: number }[] = [
     { value: 'dashboard', label: '대시보드' },
-    { value: 'selfies', label: '셀카 심사', count: stats?.selfies_pending },
+    { value: 'signup', label: '신규회원 심사', count: stats?.selfies_pending },
+    { value: 'photos', label: '사진수정 심사', count: photoChanges?.length },
     { value: 'reports', label: '신고', count: stats?.reports_pending },
     { value: 'users', label: '회원' },
     { value: 'settings', label: '설정' },
@@ -42,36 +44,40 @@ export default function AdminScreen() {
               <Text className="text-sm font-semibold text-muted">앱으로 돌아가기</Text>
             </Pressable>
           </View>
-          <View accessibilityRole="tablist" className="flex-row gap-1">
-            {tabs.map((tab) => {
-              const selected = section === tab.value;
-              return (
-                <Pressable
-                  key={tab.value}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected }}
-                  aria-selected={selected}
-                  onPress={() => setSection(tab.value)}
-                  className={`flex-row items-center gap-1.5 border-b-2 px-3 py-2.5 ${selected ? 'border-brand-500' : 'border-transparent'}`}>
-                  <Text className={`text-sm font-semibold ${selected ? 'text-brand-600' : 'text-muted'}`}>
-                    {tab.label}
-                  </Text>
-                  {tab.count ? (
-                    <View className="min-w-5 items-center rounded-full bg-brand-500 px-1.5 py-0.5">
-                      <Text className="text-xs font-bold text-white">{tab.count}</Text>
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
+          {/* 탭이 많아 좁은 화면에서는 옆으로 밀어 봅니다. */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View accessibilityRole="tablist" className="flex-row gap-1">
+              {tabs.map((tab) => {
+                const selected = section === tab.value;
+                return (
+                  <Pressable
+                    key={tab.value}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected }}
+                    aria-selected={selected}
+                    onPress={() => setSection(tab.value)}
+                    className={`flex-row items-center gap-1.5 border-b-2 px-3 py-2.5 ${selected ? 'border-brand-500' : 'border-transparent'}`}>
+                    <Text className={`text-sm font-semibold ${selected ? 'text-brand-600' : 'text-muted'}`}>
+                      {tab.label}
+                    </Text>
+                    {tab.count ? (
+                      <View className="min-w-5 items-center rounded-full bg-brand-500 px-1.5 py-0.5">
+                        <Text className="text-xs font-bold text-white">{tab.count}</Text>
+                      </View>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
         </View>
       </View>
 
       <ScrollView contentContainerClassName="items-center px-4 py-5" keyboardShouldPersistTaps="handled">
         <View className="w-full max-w-3xl">
           {section === 'dashboard' ? <Dashboard /> : null}
-          {section === 'selfies' ? <SelfieQueue /> : null}
+          {section === 'signup' ? <SignupReview /> : null}
+          {section === 'photos' ? <PhotoChangeReview /> : null}
           {section === 'reports' ? <Reports /> : null}
           {section === 'users' ? <Users /> : null}
           {section === 'settings' ? <AdminSettingsSection /> : null}

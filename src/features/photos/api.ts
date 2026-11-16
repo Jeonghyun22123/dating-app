@@ -17,6 +17,8 @@ export type ModerationResult = {
   status: ModerationStatus;
   reason?: string;
   test_mode?: boolean;
+  /** 사진 변경 요청에서 AI 가 바로 거절해 지운 사진 수 */
+  rejected_photos?: number;
 };
 
 export const photosKey = (userId: string | undefined) => ['profile-photos', userId] as const;
@@ -37,6 +39,14 @@ export function moderationMessage(reason: string | null | undefined): string {
       return '얼굴이 보이지 않아요. 정면을 보고 다시 촬영해 주세요.';
     case 'multiple_faces':
       return '혼자 나온 사진으로 다시 촬영해 주세요.';
+    case 'admin_rejected':
+      return '사진이 검토를 통과하지 못했어요.';
+    case 'no_new_photos':
+      return '새로 올린 사진이 없어요.';
+    case 'signup_review_in_progress':
+      return '가입 심사가 끝난 뒤에 사진을 바꿀 수 있어요.';
+    case 'not_allowed':
+      return '지금은 사진을 바꿀 수 없어요.';
     case 'file_missing':
       return '사진 업로드가 완료되지 않았어요. 다시 시도해 주세요.';
     default:
@@ -96,11 +106,16 @@ async function invokeModeration(body: Record<string, string>): Promise<Moderatio
   return data;
 }
 
-/** 프로필 사진 업로드 → DB 등록 → AI 검수 요청. */
+/**
+ * 프로필 사진 업로드 → DB 등록 → AI 검수 요청.
+ * moderate=false (프로필 수정): 검수를 바로 요청하지 않습니다. 가입을 마친 회원의 새 사진은 서버가
+ * '변경 요청 전(draft)' 상태로 받아 두고, "사진 변경 요청"을 할 때 셀카와 함께 검수합니다.
+ */
 export async function uploadProfilePhoto(
   userId: string,
   uri: string,
   position: number,
+  moderate = true,
 ): Promise<ModerationResult> {
   const bytes = await prepareImage(uri, 1080);
   const path = `${userId}/${Crypto.randomUUID()}.jpg`;
@@ -120,6 +135,11 @@ export async function uploadProfilePhoto(
     throw error;
   }
 
+  if (!moderate) {
+    await queryClient.invalidateQueries({ queryKey: photosKey(userId) });
+    return { status: 'pending' };
+  }
+
   try {
     return await invokeModeration({ kind: 'profile', photo_id: row.id });
   } catch {
@@ -135,6 +155,40 @@ export async function deleteProfilePhoto(photo: ProfilePhoto) {
   const { error } = await supabase.from('profile_photos').delete().eq('id', photo.id);
   if (error) throw error;
   await queryClient.invalidateQueries({ queryKey: photosKey(photo.user_id) });
+}
+
+/** 승인된 내 사진 하나를 대표사진(맨 앞)으로 지정합니다. 검토 없이 바로 반영됩니다. */
+export async function setMainPhoto(photo: ProfilePhoto) {
+  const { error } = await supabase.rpc('set_main_photo', { p_photo_id: photo.id });
+  if (error) throw error;
+  await queryClient.invalidateQueries({ queryKey: photosKey(photo.user_id) });
+}
+
+/**
+ * 사진 변경 요청. 방금 찍은 셀카를 올리고, 새로 올려 둔 사진들과 함께 검토를 요청합니다.
+ * 결과: approved = 바로 반영됨, pending = 관리자 검토 대기, rejected = 셀카 또는 사진이 통과하지 못함.
+ * 셀카는 검토가 끝나는 즉시 서버가 삭제합니다.
+ */
+export async function requestPhotoChange(userId: string, selfieUri: string): Promise<ModerationResult> {
+  const bytes = await prepareImage(selfieUri, 720);
+  const path = `${userId}/${Crypto.randomUUID()}.jpg`;
+  const upload = await supabase.storage
+    .from(SELFIE_BUCKET)
+    .upload(path, bytes, { contentType: 'image/jpeg' });
+  if (upload.error) throw upload.error;
+
+  try {
+    return await invokeModeration({ kind: 'photo_change', path });
+  } finally {
+    await queryClient.invalidateQueries({ queryKey: photosKey(userId) });
+  }
+}
+
+/** 반려 안내를 확인했음을 알립니다 (반려된 사진 기록도 함께 정리됩니다). */
+export async function dismissPhotoReview(userId: string) {
+  const { error } = await supabase.rpc('dismiss_photo_review');
+  if (error) throw error;
+  await queryClient.invalidateQueries({ queryKey: photosKey(userId) });
 }
 
 export async function fetchMyPhotos(userId: string): Promise<PhotoWithUrl[]> {

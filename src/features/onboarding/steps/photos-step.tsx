@@ -44,17 +44,10 @@ export function PhotosStep({
   userId,
   progress,
   onDone,
-  title = '프로필 사진을 올려주세요',
-  doneLabel = '다음',
-  onBack,
 }: {
   userId: string;
   progress?: string;
   onDone: () => void;
-  /** 프로필 수정에서 쓸 때의 제목과 완료 버튼 문구 */
-  title?: string;
-  doneLabel?: string;
-  onBack?: () => void;
 }) {
   const colors = useThemeColors();
   const photosQuery = useMyPhotos(userId);
@@ -108,13 +101,12 @@ export function PhotosStep({
   return (
     <Screen
       progress={progress}
-      title={title}
-      onBack={onBack}
+      title="프로필 사진을 올려주세요"
       subtitle={`얼굴이 잘 보이는 사진을 1장 이상, 최대 ${MAX_PHOTOS}장까지 등록할 수 있어요. 모든 사진은 AI 검수를 거칩니다.`}
       footer={
         <>
           <ErrorText>{error}</ErrorText>
-          <Button title={doneLabel} onPress={onDone} disabled={photos.length === 0 || uploading} />
+          <Button title="다음" onPress={onDone} disabled={photos.length === 0 || uploading} />
         </>
       }>
       <View className="flex-row flex-wrap gap-[3.5%]">

@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,19 @@ function EditForm({ profile }: { profile: Profile }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const back = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
+  const photoReviewing = profile.photo_review_status === 'reviewing';
+  // 사진 검토 결과(승인·반려)는 서버에서 바뀌므로 이 화면에 올 때마다 새로 확인합니다.
+  const userId = profile.id;
+  useFocusEffect(
+    useCallback(() => {
+      refreshMyProfile(userId);
+    }, [userId]),
+  );
 
   function toggleHobby(tag: string) {
-    setHobbies((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+    setHobbies((current) =>
+      current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag],
+    );
   }
 
   async function handleSave() {
@@ -53,8 +63,21 @@ function EditForm({ profile }: { profile: Profile }) {
         </>
       }>
       <View className="flex-row gap-2">
-        <View className="flex-1">
-          <Button title="사진 관리" variant="secondary" onPress={() => router.push('/edit-photos')} />
+        <View className="relative flex-1">
+          {/* 사진 변경을 검토하는 동안에는 사진 관리를 잠급니다 (기존 사진이 그대로 보입니다). */}
+          <Button
+            title="사진 관리"
+            variant="secondary"
+            disabled={photoReviewing}
+            onPress={() => router.push('/edit-photos')}
+          />
+          {photoReviewing ? (
+            <View
+              pointerEvents="none"
+              className="absolute -top-2 right-2 rounded-full bg-brand-500 px-2.5 py-0.5">
+              <Text className="text-xs font-bold text-white">사진 검토 중</Text>
+            </View>
+          ) : null}
         </View>
         <View className="flex-1">
           <Button title="동네 다시 설정" variant="secondary" onPress={() => router.push('/edit-location')} />
