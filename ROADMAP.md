@@ -251,7 +251,7 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 | 기능 | 현재 상태 | 필요한 것 |
 |---|---|---|
 | 사진 AI 검수 | ✅ 키 등록 완료 (실제 검수 중) | — |
-| 성향 기반 추천 정렬 | 코드 완료, 임베딩 생성 건너뜀 | OpenAI 키 (Supabase 시크릿 `OPENAI_API_KEY`) → 관리자 > 설정 > "분석 안 된 회원 채우기" 한 번 |
+| 성향 기반 추천 정렬 | ✅ 키 등록·기존 회원 분석 완료 | — |
 | 행동 분석 (접속·체류·화면 이동) | 코드 완료, 꺼짐 | PostHog 키 (`.env.local` 과 Vercel 환경변수 `EXPO_PUBLIC_POSTHOG_KEY`) |
 | 자동 얼굴 비교 | 관리자 설정에서 잠금 | Phase 9 (서비스 연동 + 동의 절차) |
 
