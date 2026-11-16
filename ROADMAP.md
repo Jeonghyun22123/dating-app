@@ -126,6 +126,7 @@
 | 8 | `supabase_phase6.sql` | 약관 동의·탈퇴 대비·접속 기록 (앱 실행에 필수) |
 | 9 | `supabase_phase7.sql` | 하트·횟수 제한·스포트라이트·받은 관심 (앱 실행에 필수) |
 | 10 | `supabase_photo_review.sql` | 사진 변경 심사·대표사진 (앱 실행에 필수) |
+| 11 | `supabase_security_fix.sql` | Supabase 보안 점검(Security Advisor) 오류 2건 정리 |
 | 개발용 | `supabase_seed_test_users.sql`, `supabase_seed_reset.sql` | 가짜 프로필 생성 · 초기화 (실서비스에서 실행 금지) |
 
 Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfie`, `delete-account` 를 배포해야 합니다.
@@ -249,12 +250,27 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 
 | 기능 | 현재 상태 | 필요한 것 |
 |---|---|---|
-| 사진 AI 검수 | 테스트 모드(전부 통과) | Sightengine 키 (베타 공개 전 필수) |
-| 성향 기반 추천 정렬 | 임베딩 생성 건너뜀 | OpenAI 키 |
-| 행동 분석 | 꺼짐 | PostHog 키 |
+| 사진 AI 검수 | ✅ 키 등록 완료 (실제 검수 중) | — |
+| 성향 기반 추천 정렬 | 코드 완료, 임베딩 생성 건너뜀 | OpenAI 키 (Supabase 시크릿 `OPENAI_API_KEY`) → 관리자 > 설정 > "분석 안 된 회원 채우기" 한 번 |
+| 행동 분석 (접속·체류·화면 이동) | 코드 완료, 꺼짐 | PostHog 키 (`.env.local` 과 Vercel 환경변수 `EXPO_PUBLIC_POSTHOG_KEY`) |
 | 자동 얼굴 비교 | 관리자 설정에서 잠금 | Phase 9 (서비스 연동 + 동의 절차) |
 
 ---
+
+## 베타 공개 전 체크리스트
+
+지금은 개발과 실제 서비스가 **같은 Supabase DB** 를 씁니다. 실제 회원을 받기 전에 아래를 정리합니다.
+
+- [ ] **테스트용 가짜 프로필 삭제**: 먼저 `node scripts/seed-photos.mjs --clean` 으로 가짜 프로필 사진 파일을 지우고,
+      SQL Editor 에서 `delete from auth.users where email like 'seed-%@seed.invalid';` 실행
+      (`supabase_seed_test_users.sql` 맨 아래 "정리" 참고. 관련 좋아요·매칭·메시지도 함께 지워집니다)
+- [ ] **테스트 계정 정리**: 개발 중 만든 내 테스트 계정들(관리자 계정 제외)을 Authentication > Users 에서 삭제
+- [ ] **개발용 DB 분리 검토**: 실제 회원이 생기면 개발용 Supabase 프로젝트를 따로 만들어 `.env.local` 만 그쪽을 보게 하기
+      (그 뒤로는 새 SQL 을 개발용에서 먼저 실행해 보고 실서비스에 적용)
+- [ ] **심사 방식 확인**: 신규회원·사진수정 심사가 "관리자 직접 승인"인지 확인 (얼굴 비교 전까지 권장)
+- [ ] **Sightengine 사용량 한도** 확인, 필요하면 요금제 조정
+- [ ] **약관·개인정보처리방침** 법률 검토와 국외 이전 항목(Sightengine·OpenAI·PostHog) 보완
+- [ ] **앱 이름·아이콘** 확정
 
 ## 결정이 필요한 것
 

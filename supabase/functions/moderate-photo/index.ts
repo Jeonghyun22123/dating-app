@@ -14,6 +14,7 @@
 //                 거절 → 'rejected' 로 기록하고 Storage 에서 파일 삭제
 //   - 셀카: 통과 → profiles.selfie_submitted_at 기록, verification_status 는
 //                 신규회원 심사 방식이 'AI 먼저'면 'approved'(셀카 즉시 삭제), '관리자 직접 승인'이면 'pending'
+//                 ('AI 먼저'여도 AI 가 판단을 미룬 가입 사진이 남아 있으면 'pending' 으로 관리자에게 넘깁니다)
 //           거절 → 'rejected', 셀카 즉시 삭제
 //   - 사진 변경 요청: 가입을 마친 회원이 새로 올린 사진('draft')과 방금 찍은 셀카를 함께 검수합니다.
 //           사진수정 심사 방식이 'AI 먼저'이고 전부 통과 → 바로 'approved'(셀카 즉시 삭제)
@@ -274,7 +275,10 @@ Deno.serve(async (req) => {
     await admin
       .from('profile_photos')
       .update({ moderation_status: 'review' })
-      .in('id', kept.map((photo) => photo.id));
+      .in(
+        'id',
+        kept.map((photo) => photo.id),
+      );
     await admin
       .from('profiles')
       .update({
@@ -301,7 +305,8 @@ Deno.serve(async (req) => {
   let bucket: string;
   let path: string;
   if (body.kind === 'photo_change') {
-    if (testMode) console.warn('[moderate-photo] TEST MODE: Sightengine 키가 없어 검수 없이 관리자 심사로 넘깁니다.');
+    if (testMode)
+      console.warn('[moderate-photo] TEST MODE: Sightengine 키가 없어 검수 없이 관리자 심사로 넘깁니다.');
     return json({ ...(await requestPhotoChange()), test_mode: testMode });
   }
   const kind = body.kind === 'selfie' ? 'selfie' : 'profile';
@@ -327,7 +332,11 @@ Deno.serve(async (req) => {
     bucket = SELFIE_BUCKET;
     path = body.path;
     // 사진 변경 심사용 셀카가 보관 중일 때 가입 셀카를 다시 내면 서로 섞이므로 막습니다.
-    const { data: me } = await admin.from('profiles').select('photo_review_status').eq('id', userId).maybeSingle();
+    const { data: me } = await admin
+      .from('profiles')
+      .select('photo_review_status')
+      .eq('id', userId)
+      .maybeSingle();
     if (me?.photo_review_status === 'reviewing') {
       await admin.storage.from(bucket).remove([path]);
       return json({ error: 'photo_review_in_progress' }, 409);
@@ -345,9 +354,10 @@ Deno.serve(async (req) => {
     verdict = error ? { status: 'rejected', reason: 'file_missing' } : { status: 'approved' };
   } else {
     const { data: signed, error } = await admin.storage.from(bucket).createSignedUrl(path, 120);
-    verdict = error || !signed
-      ? { status: 'rejected', reason: 'file_missing' }
-      : await checkWithSightengine(signed.signedUrl, kind, apiUser, apiSecret);
+    verdict =
+      error || !signed
+        ? { status: 'rejected', reason: 'file_missing' }
+        : await checkWithSightengine(signed.signedUrl, kind, apiUser, apiSecret);
   }
 
   // 4) 결과 반영
@@ -366,8 +376,16 @@ Deno.serve(async (req) => {
     // AI 가 애매하다고 본 셀카는 항상 관리자에게 넘깁니다.
     const needsHuman = verdict.status === 'pending' && verdict.reason === 'needs_review';
     if (needsHuman) verdict = { status: 'approved' };
+    // 가입 사진 중 AI 가 판단을 미룬 사진(검수 대기)이 있으면 'AI 먼저'여도 관리자 심사로 보냅니다.
+    // 관리자가 셀카를 승인할 때 그 사진도 함께 공개됩니다 (admin-review-selfie).
+    const { count: waitingPhotos } = await admin
+      .from('profile_photos')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('moderation_status', 'pending');
     const autoApprove =
       !needsHuman &&
+      !waitingPhotos &&
       (Deno.env.get('SELFIE_AUTO_APPROVE') === 'true' ||
         (!testMode && (await reviewMode('selfie_verification')) === 'ai'));
 

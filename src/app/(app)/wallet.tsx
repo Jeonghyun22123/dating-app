@@ -16,6 +16,7 @@ import {
 import { formatTime } from '@/features/chat/api';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeColors } from '@/theme/theme-view';
+import { AnalyticsEvent, track } from '@/lib/analytics';
 
 /** 하트 · 스포트라이트 · 프리미엄 상태 · 사용 내역 */
 export default function WalletScreen() {
@@ -55,6 +56,7 @@ export default function WalletScreen() {
     setBusy(true);
     try {
       await activateSpotlight(userId!);
+      track(AnalyticsEvent.SpotlightActivated);
     } catch (e) {
       setError(
         e instanceof NotEnoughHeartsError

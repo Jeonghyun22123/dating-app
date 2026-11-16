@@ -1,9 +1,8 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { usePathname } from 'expo-router';
-import { PostHogProvider } from 'posthog-react-native';
 import { useEffect, type ReactNode } from 'react';
 
-import { identifyUser, posthog, resetAnalytics, trackScreen } from '@/lib/analytics';
+import { identifyUser, resetAnalytics, trackScreen } from '@/lib/analytics';
 import { queryClient } from '@/lib/query-client';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
@@ -48,14 +47,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
   useAuthSync();
   useScreenTracking();
 
-  const tree = <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-
-  // 화면 추적은 위에서 직접 하므로 Provider의 자동 캡처는 끕니다.
-  return posthog ? (
-    <PostHogProvider client={posthog} autocapture={false}>
-      {tree}
-    </PostHogProvider>
-  ) : (
-    tree
-  );
+  // PostHog 는 Provider 없이 클라이언트를 직접 씁니다 (lib/analytics.ts).
+  // 웹은 미리 만들어 둔 HTML 을 브라우저에서 이어받는데, 서버 쪽에는 PostHog 가 없어서
+  // Provider 로 감싸면 화면 구조가 달라져 오류(React #418)가 납니다.
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

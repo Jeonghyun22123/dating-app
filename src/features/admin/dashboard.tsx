@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import { useAdminStats, type AdminStats } from './api';
+import { useAdminStats, usePhotoChangeQueue, type AdminStats } from './api';
 import { ListState } from './parts';
 
 function Stat({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
@@ -23,13 +23,14 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Stats({ s }: { s: AdminStats }) {
+function Stats({ s, photoChanges }: { s: AdminStats; photoChanges: number }) {
   return (
     <View className="gap-6">
       <Group title="처리 대기">
-        <Stat label="셀카 심사" value={s.selfies_pending} highlight />
+        {/* 관리자가 실제로 처리할 수 있는 건만 셉니다. (가입 중 검수 대기 사진은 신규회원 심사에 함께 나옵니다) */}
+        <Stat label="신규회원 심사" value={s.selfies_pending} highlight />
+        <Stat label="사진수정 심사" value={photoChanges} highlight />
         <Stat label="신고" value={s.reports_pending} highlight />
-        <Stat label="사진 검수 대기" value={s.photos_pending} highlight />
       </Group>
       <Group title="회원">
         <Stat label="전체 가입" value={s.users_total} />
@@ -60,6 +61,7 @@ function Stats({ s }: { s: AdminStats }) {
 
 export function Dashboard() {
   const stats = useAdminStats();
+  const photoChanges = usePhotoChangeQueue();
   if (!stats.data) {
     return (
       <ListState
@@ -71,5 +73,5 @@ export function Dashboard() {
       />
     );
   }
-  return <Stats s={stats.data} />;
+  return <Stats s={stats.data} photoChanges={photoChanges.data?.length ?? 0} />;
 }

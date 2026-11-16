@@ -133,6 +133,13 @@ supabase functions deploy admin-review-selfie
 가입을 마친 회원이 새로 올린 사진은 "사진 변경 요청"(셀카 촬영 포함)을 거쳐 검토 후 공개됩니다.
 심사 방식은 관리자 페이지의 "신규회원 심사" / "사진수정 심사" 탭 오른쪽 위 스위치에서 바꿉니다.
 
+### 성향 기반 추천 · 행동 분석
+
+- 성향 기반 추천: Supabase Edge Function 시크릿에 `OPENAI_API_KEY` 등록 → `update-profile-embedding` 함수 배포 →
+  관리자 페이지 > 설정 > "분석 안 된 회원 채우기". 이후 새 회원·프로필 수정은 자동으로 분석됩니다.
+- 행동 분석: `.env.local` 과 Vercel 환경변수에 `EXPO_PUBLIC_POSTHOG_KEY`(와 EU 리전이면 `EXPO_PUBLIC_POSTHOG_HOST`) 추가.
+- 보안 점검: [`supabase_security_fix.sql`](./supabase_security_fix.sql) 실행 (Security Advisor 오류 2건 정리).
+
 ### 시그널 (메시지와 함께 보내는 대화 신청)
 
 SQL Editor 에 [`supabase_signal.sql`](./supabase_signal.sql) 전체를 붙여넣고 실행합니다. **필수**입니다 (Phase 5 SQL 다음에 실행).
@@ -186,6 +193,7 @@ supabase_signal.sql           시그널 (횟수, 보내기, 받은 시그널, �
 supabase_phase6.sql           Phase 6 약관 동의 · 탈퇴 대비 · 접속 기록
 supabase_phase7.sql           Phase 7 하트 · 하루 횟수 제한 · 스포트라이트 · 받은 관심
 supabase_photo_review.sql     사진 변경 심사 · 대표사진 · 심사 방식
+supabase_security_fix.sql     보안 점검 오류 정리 (쓰지 않는 뷰 삭제, 좌표계 표 읽기 전용)
 supabase_settings.sql         알림 수신 설정
 supabase_seed_test_users.sql  개발용 가짜 프로필
 supabase_seed_reset.sql       개발용: 가짜 프로필 테스트 기록 초기화

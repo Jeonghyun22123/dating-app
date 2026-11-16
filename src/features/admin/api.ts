@@ -201,6 +201,19 @@ export async function reviewPhotoChange(userId: string, approve: boolean, note?:
   ]);
 }
 
+export type BackfillResult = { processed: number; remaining: number } | { skipped: true; reason: string };
+
+/** 성향 분석(임베딩)이 없는 회원을 한 번에 최대 100명 채웁니다. OpenAI 키가 없으면 skipped. */
+export async function backfillEmbeddings(): Promise<BackfillResult> {
+  const { data, error } = await supabase.functions.invoke<BackfillResult>('update-profile-embedding', {
+    body: { mode: 'backfill' },
+  });
+  if (error || !data) throw error ?? new Error('backfill_failed');
+  // 순서가 바뀌었을 수 있으므로 둘러보기 목록을 새로 받아옵니다.
+  await queryClient.invalidateQueries({ queryKey: ['discover'] });
+  return data;
+}
+
 export type ReviewTarget = 'signup' | 'photo_change';
 
 export type AdminSettings = {

@@ -28,6 +28,8 @@ export const AnalyticsEvent = {
   MatchCreated: 'match_created',
   MessageSent: 'message_sent',
   ReportSubmitted: 'report_submitted',
+  SpotlightActivated: 'spotlight_activated',
+  PhotoChangeRequested: 'photo_change_requested',
   PurchaseCompleted: 'purchase_completed',
 } as const;
 

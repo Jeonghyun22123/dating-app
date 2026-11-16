@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
+import { useEffect } from 'react';
 
 import { useInboxRealtime } from '@/features/chat/api';
 import { hasPreferences } from '@/features/preferences/api';
 import { PreferencesScreen } from '@/features/preferences/preferences-screen';
-import { useMyProfile } from '@/features/profile/api';
+import { refreshEmbedding, useMyProfile } from '@/features/profile/api';
 import { useSessionTracking } from '@/features/sessions/use-session-tracking';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -15,6 +16,11 @@ export default function AppLayout() {
 
   // 만남 조건이 생기기 전에 가입한 사용자는 조건을 먼저 입력받습니다 (저장하면 자동으로 넘어갑니다).
   const { data: profile } = useMyProfile();
+  // 성향 분석(임베딩)이 아직 없는 회원은 앱을 열 때 한 번 만들어 둡니다. 이미 있으면 서버가 건너뜁니다.
+  const hasProfile = !!profile;
+  useEffect(() => {
+    if (myId && hasProfile) refreshEmbedding(true);
+  }, [myId, hasProfile]);
   if (profile && !hasPreferences(profile)) {
     return (
       <PreferencesScreen

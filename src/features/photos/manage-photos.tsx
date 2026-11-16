@@ -20,6 +20,7 @@ import {
   type PhotoWithUrl,
 } from '@/features/photos/api';
 import { refreshMyProfile, useMyProfile } from '@/features/profile/api';
+import { AnalyticsEvent, track } from '@/lib/analytics';
 import { ThemeView, useThemeColors } from '@/theme/theme-view';
 
 function Tile({
@@ -151,6 +152,7 @@ export function ManagePhotos({ userId, onClose }: { userId: string; onClose: () 
         onBack={() => setTakingSelfie(false)}
         submit={async (uri) => {
           const result = await requestPhotoChange(userId, uri);
+          track(AnalyticsEvent.PhotoChangeRequested, { result: result.status });
           // 셀카가 아니라 새 사진이 전부 거절된 경우: 사진 화면으로 돌아가 이유를 보여줍니다.
           if (result.status === 'rejected' && result.rejected_photos) {
             setTakingSelfie(false);

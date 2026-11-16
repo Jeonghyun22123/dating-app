@@ -103,7 +103,10 @@ export async function completeOnboarding() {
 /**
  * 추천용 임베딩 갱신 요청. 실패해도(함수 미배포, 키 없음 등) 프로필 저장 흐름을 막지 않도록
  * 기다리지 않고 오류도 무시합니다.
+ * onlyIfMissing: 아직 임베딩이 없을 때만 만듭니다 (OpenAI 키를 등록하기 전에 가입한 회원용).
  */
-export function refreshEmbedding() {
-  supabase.functions.invoke('update-profile-embedding').catch(() => {});
+export function refreshEmbedding(onlyIfMissing = false) {
+  supabase.functions
+    .invoke('update-profile-embedding', onlyIfMissing ? { body: { mode: 'if_missing' } } : undefined)
+    .catch(() => {});
 }
