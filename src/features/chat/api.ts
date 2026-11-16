@@ -104,7 +104,7 @@ export async function unmatch(matchId: string) {
   await queryClient.invalidateQueries({ queryKey: matchesKey });
 }
 
-/** 채팅방을 열어 둔 동안 새 메시지를 실시간으로 받습니다 (DB 의 RLS 가 그대로 적용됨). */
+/** 채팅방을 열어 둔 동안 새 메시지와 읽음 표시를 실시간으로 받습니다 (DB 의 RLS 가 그대로 적용됨). */
 export function useChatRealtime(matchId: string, myId: string | undefined) {
   useEffect(() => {
     if (!myId) return;
@@ -117,6 +117,17 @@ export function useChatRealtime(matchId: string, myId: string | undefined) {
           const message = payload.new as Message;
           addToCache(message);
           if (message.sender_id !== myId) markRead(matchId, myId);
+        },
+      )
+      // 상대가 내 메시지를 읽으면(is_read 변경) 채팅방을 나갔다 오지 않아도 "읽음"이 바로 표시됩니다.
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
+        (payload) => {
+          const updated = payload.new as Message;
+          queryClient.setQueryData<Message[]>(messagesKey(matchId), (current) =>
+            current?.map((item) => (item.id === updated.id ? { ...item, is_read: updated.is_read } : item)),
+          );
         },
       )
       .subscribe();
