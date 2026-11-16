@@ -117,6 +117,16 @@
 - 기본 화면 테마를 다크로 변경 (이미 테마를 고른 사용자는 그대로)
 - (`supabase_member_profile.sql`)
 
+### 추가 · 동네 선택과 현재 위치 인증 ✅
+- 동네를 먼저 고르고(시·도 → 시·군·구 → 읍·면·동 단계 선택, 이름 검색, "현재 위치로 찾기") 현재 위치로 인증해야 저장
+- 인정 범위: 고른 동네 안(경계 300m 이내 포함) 또는 바로 맞닿은 이웃 동. 서버가 판정하고, 앱은 동네 이름·위치를 직접 저장할 수 없음
+- 저장하는 위치는 고른 동네의 중심점 (회원의 실제 GPS 좌표는 판정에만 쓰고 저장하지 않음)
+- 관리자 계정은 테스트용으로 위치 인증 없이 저장 가능
+- 기존 회원의 동네는 그대로 두고, 동네를 바꿀 때부터 새 방식 적용
+- 경계 데이터: 통계청 SGIS 행정동 경계를 가공한 vuski/admdongkor (CC BY 4.0, 출처 표시 필수 → 설정 화면 하단과 관리자 화면에 표시)
+  - 파일: `public/data/regions-20261001.json` (전국 3,559개 동, 경계 단순화). 행정구역이 바뀌면 새 파일로 교체 후 "동네 데이터 다시 불러오기"
+- (`supabase_regions.sql`)
+
 ---
 
 ## Supabase SQL 실행 순서
@@ -137,6 +147,7 @@
 | 10 | `supabase_photo_review.sql` | 사진 변경 심사·대표사진 (앱 실행에 필수) |
 | 11 | `supabase_security_fix.sql` | Supabase 보안 점검(Security Advisor) 오류 2건 정리 |
 | 12 | `supabase_member_profile.sql` | 상대 프로필 보기 (앱 실행에 필수) |
+| 13 | `supabase_regions.sql` | 동네 선택 + 현재 위치 인증 (실행 후 관리자 > 설정 > "동네 데이터 불러오기" 필수) |
 | 개발용 | `supabase_seed_test_users.sql`, `supabase_seed_reset.sql` | 가짜 프로필 생성 · 초기화 (실서비스에서 실행 금지) |
 
 Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfie`, `delete-account` 를 배포해야 합니다.

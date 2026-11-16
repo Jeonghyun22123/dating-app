@@ -21,6 +21,7 @@ import { useThemeStore } from '@/stores/theme-store';
 import { useThemeColors } from '@/theme/theme-view';
 import { hex, THEMES, type Theme } from '@/theme/themes';
 import type { Profile } from '@/types/db';
+import { REGION_DATA_CREDIT } from '@/features/location/api';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -219,6 +220,7 @@ export default function SettingsScreen() {
       <Button title="로그아웃" variant="secondary" onPress={signOut} />
 
       {version ? <Text className="text-center text-sm text-subtle">버전 {version}</Text> : null}
+      <Text className="text-center text-xs leading-4 text-subtle">{REGION_DATA_CREDIT}</Text>
     </Screen>
   );
 }

@@ -75,26 +75,6 @@ export async function updateProfile(userId: string, details: Partial<ProfileDeta
   refreshEmbedding();
 }
 
-/**
- * 현재 위치 저장. 좌표는 서버에만 보관하고 앱으로 다시 읽어오지 않습니다.
- * (다른 사용자에게는 추천 RPC 가 계산한 근사 거리만 전달됩니다)
- */
-export async function saveLocation(
-  userId: string,
-  coords: { latitude: number; longitude: number },
-  neighborhoodName: string,
-) {
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      // PostGIS EWKT 형식: 경도(longitude)가 먼저입니다.
-      location: `SRID=4326;POINT(${coords.longitude} ${coords.latitude})`,
-      neighborhood_name: neighborhoodName.trim(),
-    })
-    .eq('id', userId);
-  if (error) throw error;
-}
-
 export async function completeOnboarding() {
   const { error } = await supabase.rpc('complete_onboarding');
   if (error) throw error;

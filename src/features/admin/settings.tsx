@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { importRegions, REGION_DATA_CREDIT, useRegionCount } from '@/features/location/api';
+
 import {
   backfillEmbeddings,
   updateEconomy,
@@ -138,6 +140,59 @@ function EmbeddingSection() {
   );
 }
 
+/** 동네(행정동) 경계 데이터: 동네 선택 목록과 현재 위치 인증에 필요합니다. */
+function RegionSection() {
+  const count = useRegionCount();
+  const { error, run } = useActionError();
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [finished, setFinished] = useState(false);
+  const regionCount = typeof count.data === 'number' ? count.data : null;
+  const empty = regionCount === 0;
+  return (
+    <Card>
+      <Text className="text-base font-semibold text-fg">동네 데이터</Text>
+      <Text className="text-sm leading-5 text-muted">
+        동네 선택 목록과 현재 위치 인증에 쓰는 전국 읍·면·동 경계예요. 처음 한 번, 그리고 행정구역이 바뀐 새
+        데이터로 앱을 업데이트했을 때 불러오면 됩니다.
+      </Text>
+      <Text className={`text-sm font-semibold ${empty || count.isError ? 'text-red-600' : 'text-fg'}`}>
+        {count.isError
+          ? '확인하지 못했어요. supabase_regions.sql 을 먼저 실행해 주세요.'
+          : regionCount === null
+            ? '확인 중…'
+            : empty
+              ? '아직 불러오지 않았어요. 불러오기 전에는 회원이 동네를 설정할 수 없어요.'
+              : `${regionCount.toLocaleString('ko-KR')}개 동네가 들어 있어요.`}
+      </Text>
+      {progress ? (
+        <Text className="text-sm text-muted">
+          {progress.done.toLocaleString('ko-KR')} / {progress.total.toLocaleString('ko-KR')} 불러오는 중…
+        </Text>
+      ) : null}
+      {finished ? <Text className="text-sm text-emerald-600">동네 데이터를 모두 불러왔어요.</Text> : null}
+      {error ? <Text className="text-sm text-red-600">{error}</Text> : null}
+      <View className="flex-row justify-end">
+        <ActionButton
+          title={empty ? '동네 데이터 불러오기' : '동네 데이터 다시 불러오기'}
+          tone={empty ? 'primary' : 'plain'}
+          onPress={() =>
+            run(async () => {
+              setFinished(false);
+              try {
+                await importRegions((done, total) => setProgress({ done, total }));
+                setFinished(true);
+              } finally {
+                setProgress(null);
+              }
+            }, '불러오지 못했어요. supabase_regions.sql 을 실행했는지 확인해 주세요.')
+          }
+        />
+      </View>
+      <Text className="text-xs leading-4 text-subtle">{REGION_DATA_CREDIT}</Text>
+    </Card>
+  );
+}
+
 /** 관리자 > 설정: 가격·횟수. (심사 방식은 각 심사 탭의 오른쪽 위 스위치에서 바꿉니다) */
 export function AdminSettingsSection() {
   const settings = useAdminSettings();
@@ -157,6 +212,7 @@ export function AdminSettingsSection() {
   return (
     <View className="gap-3">
       {settings.data.economy ? <EconomySection saved={settings.data.economy} /> : null}
+      <RegionSection />
       <EmbeddingSection />
       <Text className="text-sm leading-5 text-subtle">
         심사 방식(AI 먼저 / 관리자 직접 승인)은 "신규회원 심사"와 "사진수정 심사" 탭의 오른쪽 위에서 각각 바꿀
