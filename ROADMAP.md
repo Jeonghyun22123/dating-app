@@ -109,6 +109,14 @@
 - 관리자: "셀카 심사" 탭을 "신규회원 심사" / "사진수정 심사" 로 분리, 탭마다 심사 방식 스위치(AI 먼저 ↔ 관리자 직접 승인)
 - (`supabase_photo_review.sql`, Edge Function `moderate-photo` · `admin-review-selfie` 재배포)
 
+### 추가 · 채팅방 개편과 상대 프로필 보기 ✅
+- 채팅방 상단: 가운데 상대 닉네임, 왼쪽 뒤로 가기 옆에 다른 대화의 안 읽은 메시지 수
+- 상대 말풍선: 연달아 보낸 묶음의 첫 말풍선에만 사진·닉네임, 같은 분에 보낸 묶음은 마지막에만 시각, 날짜가 바뀌면 구분선
+- 상대 프로필 화면(`/user/[id]`): 채팅방 사진·닉네임, 채팅 목록 사진, 받은 시그널 사진에서 열림. 사진 넘기기·크게 보기, 신고·차단
+- 볼 수 있는 사이: 매칭 중인 상대, 나에게 시그널을 보내고 아직 답하지 않은 사람. 거리·생년월일·점수 숫자는 보여주지 않음
+- 기본 화면 테마를 다크로 변경 (이미 테마를 고른 사용자는 그대로)
+- (`supabase_member_profile.sql`)
+
 ---
 
 ## Supabase SQL 실행 순서
@@ -128,6 +136,7 @@
 | 9 | `supabase_phase7.sql` | 하트·횟수 제한·스포트라이트·받은 관심 (앱 실행에 필수) |
 | 10 | `supabase_photo_review.sql` | 사진 변경 심사·대표사진 (앱 실행에 필수) |
 | 11 | `supabase_security_fix.sql` | Supabase 보안 점검(Security Advisor) 오류 2건 정리 |
+| 12 | `supabase_member_profile.sql` | 상대 프로필 보기 (앱 실행에 필수) |
 | 개발용 | `supabase_seed_test_users.sql`, `supabase_seed_reset.sql` | 가짜 프로필 생성 · 초기화 (실서비스에서 실행 금지) |
 
 Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfie`, `delete-account` 를 배포해야 합니다.

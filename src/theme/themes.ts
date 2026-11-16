@@ -101,7 +101,8 @@ export const THEMES: Theme[] = [
   },
 ];
 
-export const DEFAULT_THEME: ThemeId = 'white';
+// 처음 설치했거나 테마를 고른 적 없는 사용자에게 보이는 테마. 설정에서 고른 테마는 기기에 저장되어 그대로 유지됩니다.
+export const DEFAULT_THEME: ThemeId = 'dark';
 
 export function getTheme(id: ThemeId): Theme {
   return THEMES.find((theme) => theme.id === id) ?? THEMES[0];

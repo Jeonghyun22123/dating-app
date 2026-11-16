@@ -12,7 +12,18 @@ import { LikesTeaser } from '@/features/likes/likes-teaser';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeColors } from '@/theme/theme-view';
 
-function MatchRow({ match, myId, onPress }: { match: MatchSummary; myId?: string; onPress: () => void }) {
+function MatchRow({
+  match,
+  myId,
+  onPress,
+  onOpenProfile,
+}: {
+  match: MatchSummary;
+  myId?: string;
+  onPress: () => void;
+  /** 상대 사진을 누르면 프로필을 엽니다 (매칭 중일 때만) */
+  onOpenProfile?: () => void;
+}) {
   const preview = !match.is_active
     ? '대화가 종료되었어요'
     : match.last_message
@@ -26,7 +37,13 @@ function MatchRow({ match, myId, onPress }: { match: MatchSummary; myId?: string
       accessibilityLabel={`${match.nickname}님과의 대화`}
       onPress={onPress}
       className="flex-row items-center gap-3 rounded-2xl bg-card p-3 active:bg-field">
-      <Avatar url={match.photoUrl} name={match.nickname} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${match.nickname}님 프로필 보기`}
+        disabled={!onOpenProfile}
+        onPress={onOpenProfile}>
+        <Avatar url={match.photoUrl} name={match.nickname} />
+      </Pressable>
       <View className="flex-1 gap-1">
         <View className="flex-row items-center justify-between gap-2">
           <Text className="text-base font-semibold text-fg">{match.nickname}</Text>
@@ -100,6 +117,7 @@ export default function MatchesScreen() {
               match={match}
               myId={myId}
               onPress={() => router.push(`/chat/${match.match_id}`)}
+              onOpenProfile={match.is_active ? () => router.push(`/user/${match.other_id}`) : undefined}
             />
           ))}
         </View>

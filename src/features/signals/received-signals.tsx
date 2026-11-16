@@ -33,7 +33,12 @@ function SignalCard({ signal, myId }: { signal: ReceivedSignal; myId: string }) 
   return (
     <View className="gap-3 rounded-2xl border border-brand-300 bg-card p-4">
       <View className="flex-row items-center gap-3">
-        <Avatar url={signal.photoUrl} name={signal.nickname} size={48} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${signal.nickname}님 프로필 보기`}
+          onPress={() => router.push(`/user/${signal.sender_id}`)}>
+          <Avatar url={signal.photoUrl} name={signal.nickname} size={48} />
+        </Pressable>
         <View className="flex-1">
           <Text className="text-base font-semibold text-fg">
             {signal.nickname}, {signal.age}
@@ -94,7 +99,9 @@ export function ReceivedSignals({ signals, myId }: { signals: ReceivedSignal[]; 
     <View className="gap-3">
       <View className="gap-1">
         <Text className="text-lg font-bold text-fg">받은 시그널 {signals.length}</Text>
-        <Text className="text-sm text-muted">수락하면 바로 대화가 시작돼요. 거절은 상대에게 알려지지 않아요.</Text>
+        <Text className="text-sm text-muted">
+          수락하면 바로 대화가 시작돼요. 거절은 상대에게 알려지지 않아요.
+        </Text>
       </View>
       {signals.map((signal) => (
         <SignalCard key={signal.sender_id} signal={signal} myId={myId} />

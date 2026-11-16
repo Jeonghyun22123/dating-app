@@ -154,6 +154,21 @@ export function useInboxRealtime(myId: string | undefined) {
 }
 
 /** 채팅 목록·말풍선에 쓰는 짧은 시각 표시. */
+/** 채팅 말풍선 옆 시각 (예: 오후 3:04). 날짜는 날짜 구분선이 따로 보여줍니다. */
+export function formatClock(iso: string): string {
+  const date = new Date(iso);
+  const hours = date.getHours();
+  return `${hours < 12 ? '오전' : '오후'} ${hours % 12 || 12}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+/** 채팅 날짜 구분선 (예: 2026년 11월 16일 월요일) */
+export function formatDateLine(iso: string): string {
+  const date = new Date(iso);
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[date.getDay()]}요일`;
+}
+
 export function formatTime(iso: string | null, now: Date = new Date()): string {
   if (!iso) return '';
   const date = new Date(iso);

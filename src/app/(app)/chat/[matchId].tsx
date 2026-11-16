@@ -1,12 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import {
-  formatTime,
+  formatClock,
+  formatDateLine,
   markRead,
   MESSAGE_MAX,
   sendMessage,
@@ -21,16 +31,110 @@ import { AnalyticsEvent, track } from '@/lib/analytics';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeColors } from '@/theme/theme-view';
 
-function Bubble({ message, mine }: { message: Message; mine: boolean }) {
+const AVATAR = 36;
+
+type Row = {
+  message: Message;
+  mine: boolean;
+  /** 날짜가 바뀌는 첫 메시지: 위에 날짜 구분선을 그립니다 */
+  newDay: boolean;
+  /** 상대가 연달아 보낸 메시지 묶음의 첫 번째: 사진과 닉네임을 보여줍니다 */
+  groupStart: boolean;
+  /** 같은 사람이 같은 분에 보낸 묶음의 마지막: 시각을 보여줍니다 */
+  showTime: boolean;
+};
+
+const dayOf = (iso: string) => new Date(iso).toDateString();
+const minuteOf = (iso: string) => iso.slice(0, 16);
+
+/**
+ * 메시지 목록(최신이 앞)에 묶음 정보를 붙입니다.
+ * 뒤집힌 목록이라 index + 1 이 시간상 바로 앞 메시지, index - 1 이 바로 뒤 메시지입니다.
+ */
+function toRows(messages: Message[], myId: string | undefined): Row[] {
+  return messages.map((message, index) => {
+    const older = messages[index + 1];
+    const newer = messages[index - 1];
+    const newDay = !older || dayOf(older.created_at) !== dayOf(message.created_at);
+    return {
+      message,
+      mine: message.sender_id === myId,
+      newDay,
+      groupStart: newDay || older.sender_id !== message.sender_id,
+      showTime:
+        !newer ||
+        newer.sender_id !== message.sender_id ||
+        minuteOf(newer.created_at) !== minuteOf(message.created_at),
+    };
+  });
+}
+
+function Bubble({
+  row,
+  other,
+  onOpenProfile,
+}: {
+  row: Row;
+  other: { nickname: string; photoUrl: string | null };
+  onOpenProfile?: () => void;
+}) {
+  const { message, mine, newDay, groupStart, showTime } = row;
+  const meta = showTime ? (
+    <View className={`pb-0.5 ${mine ? 'items-end' : 'items-start'}`}>
+      {mine && message.is_read ? <Text className="text-xs text-subtle">읽음</Text> : null}
+      <Text className="text-xs text-subtle">{formatClock(message.created_at)}</Text>
+    </View>
+  ) : mine && message.is_read ? (
+    // 시각을 생략하는 묶음 중간 메시지도 읽음 여부는 보여줍니다.
+    <Text className="pb-0.5 text-xs text-subtle">읽음</Text>
+  ) : null;
+
   return (
-    <View className={`mb-2 max-w-[80%] ${mine ? 'self-end items-end' : 'self-start items-start'}`}>
-      <View className={`rounded-2xl px-4 py-2.5 ${mine ? 'bg-brand-500' : 'bg-card'}`}>
-        <Text className={`text-base leading-6 ${mine ? 'text-white' : 'text-fg'}`}>{message.content}</Text>
-      </View>
-      <Text className="mt-1 text-xs text-subtle">
-        {mine && message.is_read ? '읽음 · ' : ''}
-        {formatTime(message.created_at)}
-      </Text>
+    <View className={showTime ? 'mb-3' : 'mb-1'}>
+      {newDay ? (
+        <View className="mb-3 mt-1 items-center">
+          <View className="rounded-full bg-field px-3 py-1">
+            <Text className="text-xs text-muted">{formatDateLine(message.created_at)}</Text>
+          </View>
+        </View>
+      ) : null}
+
+      {mine ? (
+        <View className="max-w-[82%] flex-row items-end gap-1.5 self-end">
+          {meta}
+          <View testID="bubble-mine" className="shrink rounded-2xl bg-brand-500 px-4 py-2.5">
+            <Text className="text-base leading-6 text-white">{message.content}</Text>
+          </View>
+        </View>
+      ) : (
+        <View className="max-w-[88%] flex-row gap-2 self-start">
+          {/* 묶음의 첫 메시지에만 사진을 보여주고, 나머지는 자리만 비워 줄을 맞춥니다. */}
+          <View style={{ width: AVATAR }}>
+            {groupStart ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${other.nickname}님 프로필 보기`}
+                disabled={!onOpenProfile}
+                onPress={onOpenProfile}>
+                <Avatar url={other.photoUrl} name={other.nickname} size={AVATAR} />
+              </Pressable>
+            ) : null}
+          </View>
+          <View className="shrink gap-1">
+            {groupStart ? (
+              <Text testID="bubble-name" className="text-sm text-muted">
+                {other.nickname}
+              </Text>
+            ) : null}
+            <View className="flex-row items-end gap-1.5">
+              <View testID="bubble-theirs" className="shrink rounded-2xl bg-card px-4 py-2.5">
+                <Text className="text-base leading-6 text-fg">{message.content}</Text>
+              </View>
+              {meta}
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -87,23 +191,57 @@ export default function ChatScreen() {
   }
 
   const active = match?.is_active ?? true;
+  // 뒤로 가기 옆 숫자: 이 대화를 뺀 다른 대화들에 쌓인 안 읽은 메시지 수
+  const otherUnread = (matches ?? [])
+    .filter((item) => item.match_id !== matchId)
+    .reduce((sum, item) => sum + item.unread_count, 0);
+  const other = { nickname: match?.nickname ?? '', photoUrl: match?.photoUrl ?? null };
+  // 대화가 끝난 상대의 프로필은 볼 수 없습니다.
+  const openProfile = match && active ? () => router.push(`/user/${match.other_id}`) : undefined;
+  const rows = toRows(messages.data ?? [], myId);
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View className="flex-row items-center gap-3 border-b border-line bg-card px-4 py-3">
-          <Pressable accessibilityRole="button" accessibilityLabel="뒤로" hitSlop={8} onPress={goBack}>
-            <Ionicons name="chevron-back" size={26} color={colors.fg} />
-          </Pressable>
-          {match ? <Avatar url={match.photoUrl} name={match.nickname} size={36} /> : null}
-          <Text className="flex-1 text-lg font-semibold text-fg">{match?.nickname ?? ''}</Text>
+        <View className="flex-row items-center border-b border-line bg-card px-3 py-3">
+          {/* 왼쪽: 뒤로 가기 + 다른 대화의 안 읽은 메시지 수 */}
+          <View className="flex-1 items-start">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                otherUnread > 0 ? `뒤로, 다른 대화에 안 읽은 메시지 ${otherUnread}개` : '뒤로'
+              }
+              hitSlop={8}
+              onPress={goBack}
+              className="flex-row items-center gap-0.5">
+              <Ionicons name="chevron-back" size={26} color={colors.fg} />
+              {otherUnread > 0 ? (
+                <Text testID="other-unread" className="text-base font-semibold text-fg">
+                  {otherUnread > 99 ? '99+' : otherUnread}
+                </Text>
+              ) : null}
+            </Pressable>
+          </View>
+          {/* 가운데: 상대 닉네임 (누르면 프로필) */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="신고, 차단, 매칭 해제"
-            hitSlop={8}
-            onPress={() => setSafetyOpen(true)}>
-            <Ionicons name="ellipsis-horizontal" size={24} color={colors.muted} />
+            accessibilityLabel={`${other.nickname}님 프로필 보기`}
+            disabled={!openProfile}
+            onPress={openProfile}
+            className="max-w-[60%] px-2">
+            <Text numberOfLines={1} className="text-lg font-semibold text-fg">
+              {other.nickname}
+            </Text>
           </Pressable>
+          <View className="flex-1 items-end">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="신고, 차단, 매칭 해제"
+              hitSlop={8}
+              onPress={() => setSafetyOpen(true)}>
+              <Ionicons name="ellipsis-horizontal" size={24} color={colors.muted} />
+            </Pressable>
+          </View>
         </View>
 
         {messages.isPending ? (
@@ -113,9 +251,9 @@ export default function ChatScreen() {
         ) : (
           <FlatList
             inverted
-            data={messages.data ?? []}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <Bubble message={item} mine={item.sender_id === myId} />}
+            data={rows}
+            keyExtractor={(item) => item.message.id}
+            renderItem={({ item }) => <Bubble row={item} other={other} onOpenProfile={openProfile} />}
             contentContainerClassName="px-4 py-3"
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={

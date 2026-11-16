@@ -7,6 +7,7 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/chat/:matchId", "destination": "/chat/[matchId]" },
+    { "source": "/user/:id", "destination": "/user/[id]" },
     { "source": "/legal/:doc", "destination": "/legal/[doc]" }
   ],
   "headers": [
