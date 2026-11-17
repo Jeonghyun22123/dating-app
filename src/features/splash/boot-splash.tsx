@@ -14,13 +14,13 @@ const STAGGER_MS = 50;
 const DRAW_END = DRAW_MS + STAGGER_MS * (MARK_PATHS.length - 1);
 
 const STYLE = `
-#boot-splash{position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;background:var(--boot-bg,#111113);transition:opacity .45s ease,transform .45s ease}
+#boot-splash{position:fixed;top:0;left:0;width:100%;height:100%;overflow:hidden;z-index:2147483646;display:flex;align-items:center;justify-content:center;background:var(--boot-bg,#111113);transition:opacity .45s ease}
 #boot-splash svg{width:min(62vw,280px);height:auto;overflow:visible}
 #boot-splash .ink{fill:none;stroke:var(--boot-ink,#f43f5e);stroke-linecap:round;stroke-linejoin:round}
 #boot-splash .draw{stroke-dasharray:var(--len) var(--gap);stroke-dashoffset:var(--start);animation:boot-draw ${DRAW_MS}ms cubic-bezier(.6,0,.3,1) var(--delay) both}
 #boot-splash .draw.heart{transform-box:fill-box;transform-origin:center;animation:boot-draw ${DRAW_MS}ms cubic-bezier(.6,0,.3,1) var(--delay) both,boot-beat 520ms ease-in-out ${DRAW_END}ms 1,boot-beat 1300ms ease-in-out ${DRAW_END + 1100}ms infinite}
 #boot-splash .word{opacity:0;animation:boot-fade 450ms ease-out ${DRAW_END - 200}ms forwards}
-#boot-splash.boot-out{opacity:0;transform:scale(1.06);pointer-events:none}
+#boot-splash.boot-out{opacity:0;pointer-events:none}
 @keyframes boot-draw{0%{stroke-dashoffset:var(--start)}100%{stroke-dashoffset:0}}
 @keyframes boot-beat{0%,100%{transform:scale(1)}30%{transform:scale(1.15)}60%{transform:scale(.97)}}
 @keyframes boot-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -28,7 +28,6 @@ const STYLE = `
 #boot-splash .draw,#boot-splash .draw.heart{animation:none;stroke-dasharray:none;stroke-dashoffset:0}
 #boot-splash .word{animation:none;opacity:1}
 #boot-splash svg{animation:boot-fade .4s ease-out}
-#boot-splash.boot-out{transform:none}
 }`;
 
 export function BootSplashHead() {

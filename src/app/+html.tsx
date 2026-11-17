@@ -32,10 +32,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="모먼트" />
-        {/* 시계 줄을 검은 바탕 + 흰 글자로 둡니다 (다크 테마와 어울림).
-            "black-translucent"(투명)는 일부 iOS 에서 화면 높이를 시계 줄만큼 잘못 계산해
-            화면 전체가 위로 밀리고 아래에 빈 띠가 생겨서 쓰지 않습니다. */}
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        {/* 시계 줄을 투명하게 두고 앱 화면을 그 뒤까지 그립니다 (시계 글자색은 iOS 가 바탕 밝기에 맞춤) */}
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         {/* 앱이 그려지기 전에 흰 화면이 번쩍이지 않도록 */}
         <style>{'html, body { background-color: #111113; }'}</style>
         {/* 화면 전체 스크롤 대신 앱 안의 스크롤만 쓰도록 맞춥니다 (Expo 기본 설정) */}

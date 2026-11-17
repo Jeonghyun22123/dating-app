@@ -54,6 +54,8 @@ function WebSplashCover() {
     el.classList.add('boot-out');
     const timer = setTimeout(() => {
       el.remove();
+      // 혹시 문서가 조금이라도 밀려 있으면 제자리로 돌립니다 (iOS 홈 화면 앱).
+      window.scrollTo(0, 0);
       useSplashStore.setState({ done: true });
     }, 500);
     return () => clearTimeout(timer);
