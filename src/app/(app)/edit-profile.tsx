@@ -111,6 +111,8 @@ function EditForm({ profile }: { profile: Profile }) {
         })}
       </View>
 
+      <MbtiPicker value={mbti} onChange={setMbti} />
+
       <View className="gap-2">
         <Text className="text-sm font-medium text-muted">
           취미 ({hobbies.length}/{LIMITS.hobbiesMax})
@@ -140,8 +142,6 @@ function EditForm({ profile }: { profile: Profile }) {
         maxLength={LIMITS.bioMax}
         hint={`${bio.length}/${LIMITS.bioMax} · 50자 이상 적으면 신뢰 점수가 올라가요`}
       />
-
-      <MbtiPicker value={mbti} onChange={setMbti} />
 
       <Text className="text-sm leading-5 text-subtle">성별과 생년월일은 바꿀 수 없어요.</Text>
     </Screen>
