@@ -17,7 +17,7 @@ export function ViewportDebugSection() {
   if (Platform.OS !== 'web' || !info) return null;
   const rows: [string, string][] = [
     ['홈 화면 앱', info.standalone ? '예' : '아니오'],
-    ['높이 보정', info.fixApplied ? '예' : '아니오'],
+    ['버전', '시계 줄 black'],
     ['화면 높이 (screen)', String(info.screenHeight)],
     ['보이는 높이 (inner)', String(info.innerHeight)],
     ['문서 높이 (client)', String(info.clientHeight)],

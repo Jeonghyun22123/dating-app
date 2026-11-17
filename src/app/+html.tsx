@@ -32,8 +32,10 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="모먼트" />
-        {/* 시계 줄을 투명하게 두고 앱 화면을 그 뒤까지 그립니다 (시계 글자색은 iOS 가 바탕 밝기에 맞춤) */}
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        {/* 시계 줄을 검은 바탕으로 두고 앱은 그 아래부터 그립니다.
+            "black-translucent"(투명)는 iOS 26 홈 화면 앱에서 화면 높이를 시계 줄만큼 짧게 잡으면서
+            맨 위부터 그려, 아래에 칠할 수 없는 빈 띠가 생깁니다 (실기기 진단: 화면 852, 보이는 높이 793). */}
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         {/* 앱이 그려지기 전에 흰 화면이 번쩍이지 않도록 */}
         <style>{'html, body { background-color: #111113; }'}</style>
         {/* 화면 전체 스크롤 대신 앱 안의 스크롤만 쓰도록 맞춥니다 (Expo 기본 설정) */}
