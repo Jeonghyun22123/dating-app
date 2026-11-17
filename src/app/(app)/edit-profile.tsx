@@ -9,6 +9,7 @@ import { TextField } from '@/components/ui/text-field';
 import { refreshMyProfile, updateProfile, useMyProfile } from '@/features/profile/api';
 import { HOBBY_TAGS, LIMITS, PURPOSES } from '@/features/profile/constants';
 import type { Profile, Purpose } from '@/types/db';
+import { MbtiPicker, mbtiFromDraft, toMbtiDraft, type MbtiDraft } from '@/features/profile/mbti-picker';
 
 function EditForm({ profile }: { profile: Profile }) {
   const router = useRouter();
@@ -16,6 +17,7 @@ function EditForm({ profile }: { profile: Profile }) {
   const [purpose, setPurpose] = useState<Purpose>(profile.purpose);
   const [hobbies, setHobbies] = useState<string[]>(profile.hobbies);
   const [bio, setBio] = useState(profile.bio ?? '');
+  const [mbti, setMbti] = useState<MbtiDraft>(() => toMbtiDraft(profile.mbti));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const back = () => (router.canGoBack() ? router.back() : router.replace('/profile'));
@@ -40,10 +42,12 @@ function EditForm({ profile }: { profile: Profile }) {
       return setError(`닉네임은 ${LIMITS.nicknameMin}~${LIMITS.nicknameMax}자로 입력해 주세요.`);
     }
     if (hobbies.length === 0) return setError('취미를 1개 이상 선택해 주세요.');
+    const mbtiValue = mbtiFromDraft(mbti);
+    if (mbtiValue === undefined) return setError('MBTI 4가지를 모두 고르거나 "선택 안 함"을 눌러 주세요.');
     setError(null);
     setSaving(true);
     try {
-      await updateProfile(profile.id, { nickname: name, purpose, hobbies, bio });
+      await updateProfile(profile.id, { nickname: name, purpose, hobbies, bio, mbti: mbtiValue });
       await refreshMyProfile(profile.id);
       back();
     } catch {
@@ -136,6 +140,8 @@ function EditForm({ profile }: { profile: Profile }) {
         maxLength={LIMITS.bioMax}
         hint={`${bio.length}/${LIMITS.bioMax} · 50자 이상 적으면 신뢰 점수가 올라가요`}
       />
+
+      <MbtiPicker value={mbti} onChange={setMbti} />
 
       <Text className="text-sm leading-5 text-subtle">성별과 생년월일은 바꿀 수 없어요.</Text>
     </Screen>

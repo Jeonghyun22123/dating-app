@@ -76,6 +76,7 @@ export default function MemberProfileScreen() {
         photos={profile.photoUrls.map((url) => ({ key: url, url }))}
         nickname={profile.nickname}
         age={profile.age}
+        mbti={profile.mbti}
         badge={
           profile.trust_level === 'high'
             ? 'high'

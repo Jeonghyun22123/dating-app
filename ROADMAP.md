@@ -155,6 +155,7 @@
 | 11 | `supabase_security_fix.sql` | Supabase 보안 점검(Security Advisor) 오류 2건 정리 |
 | 12 | `supabase_member_profile.sql` | 상대 프로필 보기 (앱 실행에 필수) |
 | 13 | `supabase_regions.sql` | 동네 선택 + 현재 위치 인증 (실행 후 관리자 > 설정 > "동네 데이터 불러오기" 필수) |
+| 14 | `supabase_mbti.sql` | MBTI (앱 실행에 필수) |
 | 개발용 | `supabase_seed_test_users.sql`, `supabase_seed_reset.sql` | 가짜 프로필 생성 · 초기화 (실서비스에서 실행 금지) |
 
 Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfie`, `delete-account` 를 배포해야 합니다.

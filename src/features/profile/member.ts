@@ -12,6 +12,7 @@ export type MemberProfile = {
   purpose: Purpose;
   hobbies: string[];
   bio: string | null;
+  mbti: string | null;
   neighborhood_name: string | null;
   verification_status: VerificationStatus;
   trust_level: 'high' | 'verified' | null;

@@ -72,6 +72,7 @@ export default function MyProfileScreen() {
         }))}
         nickname={profile.nickname}
         age={calculateAge(profile.birth_date)}
+        mbti={profile.mbti}
         badge={
           trust?.level === 'high'
             ? 'high'

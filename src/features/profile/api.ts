@@ -38,6 +38,8 @@ export type ProfileDetails = {
   purpose: Purpose;
   hobbies: string[];
   bio: string;
+  /** null = 입력 안 함 */
+  mbti?: string | null;
 };
 
 export async function createProfile(
@@ -55,6 +57,7 @@ export async function createProfile(
     purpose: details.purpose,
     hobbies: details.hobbies,
     bio: details.bio.trim() || null,
+    mbti: details.mbti ?? null,
     ...toColumns(prefs),
   });
   if (error) throw error;
@@ -69,6 +72,7 @@ export async function updateProfile(userId: string, details: Partial<ProfileDeta
       ...(details.purpose !== undefined && { purpose: details.purpose }),
       ...(details.hobbies !== undefined && { hobbies: details.hobbies }),
       ...(details.bio !== undefined && { bio: details.bio.trim() || null }),
+      ...(details.mbti !== undefined && { mbti: details.mbti }),
     })
     .eq('id', userId);
   if (error) throw error;

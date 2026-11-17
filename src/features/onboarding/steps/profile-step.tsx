@@ -12,6 +12,7 @@ import { HOBBY_TAGS, LIMITS, PURPOSES } from '@/features/profile/constants';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import type { Purpose } from '@/types/db';
+import { MbtiPicker, mbtiFromDraft, toMbtiDraft, type MbtiDraft } from '@/features/profile/mbti-picker';
 
 export function ProfileStep({ userId, progress }: { userId: string; progress: string }) {
   const { identity, setIdentity } = useOnboardingStore();
@@ -19,6 +20,7 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
   const [purpose, setPurpose] = useState<Purpose | null>(null);
   const [hobbies, setHobbies] = useState<string[]>([]);
   const [bio, setBio] = useState('');
+  const [mbti, setMbti] = useState<MbtiDraft>(() => toMbtiDraft(null));
   // 나이 기본값(내 나이 ±5세)은 앞 단계에서 입력한 생년월일로 정합니다.
   const [prefs, setPrefs] = useState(() => defaultPreferences(identity?.birthDate ?? '2000-01-01'));
   const [error, setError] = useState<string | null>(null);
@@ -38,13 +40,20 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
     }
     if (!purpose) return setError('만남 목적을 선택해 주세요.');
     if (hobbies.length === 0) return setError('취미를 1개 이상 선택해 주세요.');
+    const mbtiValue = mbtiFromDraft(mbti);
+    if (mbtiValue === undefined) return setError('MBTI 4가지를 모두 고르거나 "선택 안 함"을 눌러 주세요.');
     const prefGender = prefs.gender;
     if (!prefGender) return setError('만나고 싶은 성별을 선택해 주세요.');
 
     setError(null);
     setSaving(true);
     try {
-      await createProfile(userId, identity, { nickname: name, purpose, hobbies, bio }, { ...prefs, gender: prefGender });
+      await createProfile(
+        userId,
+        identity,
+        { nickname: name, purpose, hobbies, bio, mbti: mbtiValue },
+        { ...prefs, gender: prefGender },
+      );
       track(AnalyticsEvent.ProfileCompleted, { purpose, hobby_count: hobbies.length });
       await refreshMyProfile(userId);
     } catch (e) {
@@ -129,6 +138,8 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
         maxLength={LIMITS.bioMax}
         hint={`${bio.length}/${LIMITS.bioMax}`}
       />
+
+      <MbtiPicker value={mbti} onChange={setMbti} />
 
       <View className="gap-4 border-t border-line pt-6">
         <View className="gap-1">

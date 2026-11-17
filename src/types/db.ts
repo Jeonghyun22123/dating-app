@@ -26,6 +26,8 @@ export type Profile = {
   premium_expires_at: string | null;
   /** 스포트라이트가 끝나는 시각 (지났으면 사용 중 아님) */
   spotlight_until: string | null;
+  /** MBTI 유형 (예: ENFP), 입력하지 않았으면 null */
+  mbti: string | null;
   /** 사진 변경 요청: 검토 중 / 반려됨(사용자가 확인하면 null) */
   photo_review_status: 'reviewing' | 'rejected' | null;
   /** 반려 사유 (관리자가 고른 문구) */
@@ -44,7 +46,7 @@ export type Profile = {
 };
 
 export const PROFILE_COLUMNS =
-  'id, role, nickname, gender, birth_date, is_adult_verified, purpose, hobbies, bio, neighborhood_name, trust_score, verification_status, coin_balance, is_premium, is_banned, onboarding_completed_at, selfie_submitted_at, pref_genders, pref_age_min, pref_age_max, pref_distance_km, signal_credits, premium_expires_at, spotlight_until, photo_review_status, photo_review_note';
+  'id, role, nickname, gender, birth_date, is_adult_verified, purpose, hobbies, bio, neighborhood_name, trust_score, verification_status, coin_balance, is_premium, is_banned, onboarding_completed_at, selfie_submitted_at, pref_genders, pref_age_min, pref_age_max, pref_distance_km, signal_credits, premium_expires_at, spotlight_until, photo_review_status, photo_review_note, mbti';
 
 export type ProfilePhoto = {
   id: string;

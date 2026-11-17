@@ -26,6 +26,8 @@ type Props = {
   photos: CardPhoto[];
   nickname: string;
   age: number;
+  /** MBTI (예: ENFP) */
+  mbti?: string | null;
   badge: CardBadge;
   /** 예: "성수동 · 취미 메이트" */
   subtitle: string;
@@ -46,6 +48,7 @@ export function ProfileCard({
   photos,
   nickname,
   age,
+  mbti,
   badge,
   subtitle,
   bio,
@@ -191,6 +194,11 @@ export function ProfileCard({
           <Text style={shadow} className="text-3xl font-bold text-white">
             {nickname}, {age}
           </Text>
+          {mbti ? (
+            <View testID="mbti" className="rounded-full border border-white/70 px-2.5 py-0.5">
+              <Text className="text-sm font-bold tracking-wider text-white">{mbti}</Text>
+            </View>
+          ) : null}
           {badge === 'high' ? (
             <View className="flex-row items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1">
               <Ionicons name="shield-checkmark" size={14} color="#422006" />

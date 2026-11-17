@@ -21,6 +21,8 @@ export type DiscoverProfile = {
   trust_level: TrustLevel;
   /** 이 사람이 나에게 보낸 시그널 메시지 (없으면 null). 관심을 누르면 이 메시지로 대화가 시작됩니다 */
   signal_message: string | null;
+  /** MBTI (입력하지 않았으면 null) */
+  mbti: string | null;
   /** 서버가 계산한 근사 거리. 정확한 좌표는 앱으로 오지 않습니다. */
   distance_km: number;
   photo_paths: string[] | null;

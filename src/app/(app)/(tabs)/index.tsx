@@ -271,6 +271,11 @@ function ProfileCard({
               <Text style={shadow} className="text-3xl font-bold text-white">
                 {profile.nickname}, {profile.age}
               </Text>
+              {profile.mbti ? (
+                <View testID="mbti" className="rounded-full border border-white/70 px-2.5 py-0.5">
+                  <Text className="text-sm font-bold tracking-wider text-white">{profile.mbti}</Text>
+                </View>
+              ) : null}
               {profile.trust_level === 'high' ? (
                 <View className="flex-row items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1">
                   <Ionicons name="shield-checkmark" size={14} color="#422006" />
