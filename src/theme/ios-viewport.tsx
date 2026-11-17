@@ -5,7 +5,7 @@ import { SafeAreaFrameContext, SafeAreaInsetsContext, type EdgeInsets } from 're
 /**
  * 웹(특히 아이폰 "홈 화면에 추가" 앱)의 화면 영역 보정.
  *
- * 실기기 진단(iOS 26, 다이내믹 아일랜드 기종) 결과:
+ * 실기기 진단(iOS 26, 다이내믹 아일랜드 기종, 2026-11) 결과:
  * - 시계 줄·홈 바 여백(env(safe-area-inset-*))은 59 / 34 로 정상인데, 안전 영역 라이브러리가 0 / 0 으로 읽어
  *   화면 맨 위가 시계와 겹치고 탭 바가 홈 바에 붙었습니다.
  * - 보이는 높이(innerHeight)가 화면 높이보다 시계 줄만큼(59) 작게 잡혀 아래에 빈 띠가 생겼습니다.
@@ -94,25 +94,4 @@ export function WebSafeArea({ children }: { children: ReactNode }) {
       <SafeAreaInsetsContext.Provider value={insets ?? ZERO}>{children}</SafeAreaInsetsContext.Provider>
     </SafeAreaFrameContext.Provider>
   );
-}
-
-/** 진단 화면에서 보여줄 현재 값 */
-export function readViewportInfo() {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
-  const env = readEnvInsets();
-  const root = document.getElementById('root')?.getBoundingClientRect();
-  return {
-    standalone: isStandaloneIos(),
-    screenHeight: window.screen.height,
-    innerHeight: window.innerHeight,
-    clientHeight: document.documentElement.clientHeight,
-    visualHeight: window.visualViewport?.height ?? null,
-    visualOffsetTop: window.visualViewport?.offsetTop ?? null,
-    scrollY: window.scrollY,
-    envTop: env.top,
-    envBottom: env.bottom,
-    rootTop: root ? Math.round(root.top) : null,
-    rootHeight: root ? Math.round(root.height) : null,
-    userAgent: navigator.userAgent,
-  };
 }

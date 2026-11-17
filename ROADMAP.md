@@ -309,6 +309,9 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 
 ## 알려진 한계
 
+- 아이폰 홈 화면 앱(iOS 26)은 시계 줄을 "black"(불투명)으로 둡니다. "black-translucent"(투명)는 화면 높이를 시계 줄만큼 짧게 잡아 아래에 빈 띠가 생깁니다 (실기기 진단으로 확인). 그래서 화이트 테마에서도 시계 줄은 검은색입니다.
+- 웹의 안전 영역(시계 줄·홈 바) 여백은 라이브러리 대신 CSS 값을 직접 읽어 씁니다 (`src/theme/ios-viewport.tsx`).
+
 - iOS·Android 실기기 테스트를 아직 하지 않았습니다 (웹에서만 검증).
 - 채팅 실시간 수신은 자동 테스트로 검증하지 못했습니다 (화면 진입 시·30초마다 보조 갱신).
 - 받은 시그널은 실시간 알림이 아니라 채팅 탭 진입 시·30초마다 갱신됩니다.
