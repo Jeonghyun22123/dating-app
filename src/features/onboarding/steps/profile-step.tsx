@@ -109,6 +109,8 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
         })}
       </View>
 
+      <MbtiPicker value={mbti} onChange={setMbti} />
+
       <View className="gap-2">
         <Text className="text-sm font-medium text-muted">
           취미 ({hobbies.length}/{LIMITS.hobbiesMax})
@@ -138,8 +140,6 @@ export function ProfileStep({ userId, progress }: { userId: string; progress: st
         maxLength={LIMITS.bioMax}
         hint={`${bio.length}/${LIMITS.bioMax}`}
       />
-
-      <MbtiPicker value={mbti} onChange={setMbti} />
 
       <View className="gap-4 border-t border-line pt-6">
         <View className="gap-1">
