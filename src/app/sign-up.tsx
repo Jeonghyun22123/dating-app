@@ -50,7 +50,7 @@ export default function SignUpScreen() {
   }
 
   return (
-    <Screen hero={<BrandLogo size={88} />} title="회원가입" subtitle="만 19세 이상만 가입할 수 있어요.">
+    <Screen hero={<BrandLogo width={150} />} title="회원가입" subtitle="만 19세 이상만 가입할 수 있어요.">
       <View className="gap-4">
         <TextField
           label="이메일"
