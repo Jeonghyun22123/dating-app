@@ -14,7 +14,7 @@ const STAGGER_MS = 50;
 const DRAW_END = DRAW_MS + STAGGER_MS * (MARK_PATHS.length - 1);
 
 const STYLE = `
-#boot-splash{position:fixed;top:0;left:0;width:100%;height:100%;overflow:hidden;z-index:2147483646;display:flex;align-items:center;justify-content:center;background:var(--boot-bg,#111113);transition:opacity .45s ease}
+#boot-splash{position:fixed;top:0;left:0;width:100%;height:calc(100% + env(safe-area-inset-top));overflow:hidden;z-index:2147483646;display:flex;align-items:center;justify-content:center;background:var(--boot-bg,#111113);transition:opacity .45s ease}
 #boot-splash svg{width:min(62vw,280px);height:auto;overflow:visible}
 #boot-splash .ink{fill:none;stroke:var(--boot-ink,#f43f5e);stroke-linecap:round;stroke-linejoin:round}
 #boot-splash .draw{stroke-dasharray:var(--len) var(--gap);stroke-dashoffset:var(--start);animation:boot-draw ${DRAW_MS}ms cubic-bezier(.6,0,.3,1) var(--delay) both}

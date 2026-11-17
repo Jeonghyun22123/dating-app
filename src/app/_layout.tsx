@@ -16,7 +16,7 @@ import { AppProviders } from '@/providers/app-providers';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeStore } from '@/stores/theme-store';
 import { ThemeView, useThemeColors } from '@/theme/theme-view';
-import { useIosViewportFix } from '@/theme/ios-viewport';
+import { WebSafeArea } from '@/theme/ios-viewport';
 import { useWebStatusBar } from '@/theme/use-web-status-bar';
 import { SplashCover } from '@/features/splash/splash-cover';
 
@@ -151,8 +151,6 @@ function ThemedStatusBar() {
   const colors = useThemeColors();
   // 웹(홈 화면에 추가한 웹앱 포함)은 시계 줄 색을 따로 맞춥니다.
   useWebStatusBar();
-  // 아이폰 홈 화면 앱에서 화면이 위로 밀리는 경우를 보정합니다.
-  useIosViewportFix();
   return <StatusBar style={colors.dark ? 'light' : 'dark'} />;
 }
 
@@ -162,11 +160,14 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       {/* 앱 전체에 현재 테마의 색을 적용합니다 */}
       <ThemeView style={{ flex: 1 }}>
-        <AppProviders>
-          <ThemedStatusBar />
-          <RootNavigator />
-          <SplashCover />
-        </AppProviders>
+        {/* 웹: 시계 줄·홈 바 여백을 직접 읽어 알려줍니다 (아이폰 홈 화면 앱 보정) */}
+        <WebSafeArea>
+          <AppProviders>
+            <ThemedStatusBar />
+            <RootNavigator />
+            <SplashCover />
+          </AppProviders>
+        </WebSafeArea>
       </ThemeView>
     </GestureHandlerRootView>
   );
