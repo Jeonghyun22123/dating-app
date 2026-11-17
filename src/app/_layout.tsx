@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useThemeStore } from '@/stores/theme-store';
 import { ThemeView, useThemeColors } from '@/theme/theme-view';
 import { useWebStatusBar } from '@/theme/use-web-status-bar';
+import { SplashCover } from '@/features/splash/splash-cover';
 
 /**
  * 로그인/온보딩 상태에 따라 들어갈 수 있는 화면 묶음을 나눕니다.
@@ -161,6 +162,7 @@ export default function RootLayout() {
         <AppProviders>
           <ThemedStatusBar />
           <RootNavigator />
+          <SplashCover />
         </AppProviders>
       </ThemeView>
     </GestureHandlerRootView>

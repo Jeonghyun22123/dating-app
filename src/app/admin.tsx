@@ -9,6 +9,7 @@ import { Reports } from '@/features/admin/reports';
 import { PhotoChangeReview, SignupReview } from '@/features/admin/review-queue';
 import { AdminSettingsSection } from '@/features/admin/settings';
 import { Users } from '@/features/admin/users';
+import { useMarkAppReady } from '@/features/splash/store';
 
 type Section = 'dashboard' | 'signup' | 'photos' | 'reports' | 'users' | 'settings';
 
@@ -21,6 +22,7 @@ export default function AdminScreen() {
   const router = useRouter();
   const [section, setSection] = useState<Section>('dashboard');
   const { data: stats } = useAdminStats();
+  useMarkAppReady();
   const { data: photoChanges } = usePhotoChangeQueue();
 
   const tabs: { value: Section; label: string; count?: number }[] = [

@@ -30,6 +30,7 @@ import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeColors } from '@/theme/theme-view';
+import { useMarkAppReady } from '@/features/splash/store';
 
 const AVATAR = 36;
 
@@ -153,6 +154,7 @@ export default function ChatScreen() {
   const [safetyOpen, setSafetyOpen] = useState(false);
 
   useChatRealtime(matchId, myId);
+  useMarkAppReady(!matchesPending && !messages.isPending);
 
   // 채팅방에 들어오면 받은 메시지를 읽음 처리합니다.
   useEffect(() => {

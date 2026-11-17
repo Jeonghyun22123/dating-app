@@ -1,6 +1,8 @@
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
+import { BootSplash, BootSplashHead } from '@/features/splash/boot-splash';
+
 /**
  * 웹(PWA) 전용 HTML 틀. 정적 빌드 때 모든 페이지의 <head> 에 들어갑니다.
  * 홈 화면에 추가했을 때 앱처럼 열리도록 매니페스트와 아이콘을 연결합니다.
@@ -35,10 +37,13 @@ export default function Root({ children }: PropsWithChildren) {
         {/* 앱이 그려지기 전에 흰 화면이 번쩍이지 않도록 */}
         <style>{'html, body { background-color: #111113; }'}</style>
         {/* 화면 전체 스크롤 대신 앱 안의 스크롤만 쓰도록 맞춥니다 (Expo 기본 설정) */}
+        <BootSplashHead />
         <ScrollViewStyleReset />
         {headNodes}
       </head>
       <body {...bodyAttributes}>
+        {/* 앱을 처음 켤 때 보이는 로고 표지 (준비되면 SplashCover 가 걷어 냄) */}
+        <BootSplash />
         {children}
         {bodyNodes}
       </body>

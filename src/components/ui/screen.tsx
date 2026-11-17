@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '@/theme/theme-view';
+import { useMarkAppReady } from '@/features/splash/store';
 
 type Props = {
   title?: string;
@@ -29,6 +30,8 @@ type Props = {
 /** 모든 화면의 공통 틀: 안전 영역, 키보드 대응, 스크롤, 웹에서의 최대 너비. */
 export function Screen({ title, subtitle, progress, children, footer, onBack, hero }: Props) {
   const colors = useThemeColors();
+  // 일반 화면이 그려지면 첫 화면 준비가 끝난 것으로 보고 표지를 걷습니다.
+  useMarkAppReady();
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

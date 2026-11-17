@@ -33,6 +33,7 @@ import { SafetySheet } from '@/features/safety/safety-sheet';
 import { SignalComposeSheet } from '@/features/signals/compose-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { ThemeView, useThemeColors } from '@/theme/theme-view';
+import { markAppReady, useMarkAppReady } from '@/features/splash/store';
 
 const MAX_HOBBIES = 5;
 /** 뒤 카드가 맨 위로 올라온 뒤 완전히 선명해지기까지 걸리는 시간 (ms) */
@@ -102,6 +103,8 @@ function ProfileCard({
 
   // 0 = 가려짐, 1 = 공개. 처음부터 맨 위인 카드는 애니메이션 없이 바로 공개 상태로 시작합니다.
   const reveal = useSharedValue(revealed ? 1 : 0);
+  // 사진이 없는 카드는 바로 준비 완료입니다.
+  useMarkAppReady(revealed && photos.length === 0);
   useEffect(() => {
     reveal.value = withTiming(revealed ? 1 : 0, {
       duration: REVEAL_MS,
@@ -130,6 +133,9 @@ function ProfileCard({
             style={{ flex: 1 }}
             contentFit="cover"
             transition={150}
+            // 맨 위 카드의 첫 사진이 다 받아지면 앱 표지를 걷습니다 (실패해도 걷음).
+            onLoad={revealed ? markAppReady : undefined}
+            onError={revealed ? markAppReady : undefined}
           />
         ) : (
           <Animated.View
@@ -485,6 +491,8 @@ export default function DiscoverScreen() {
   }
 
   const noop = () => {};
+  // 카드 대신 안내 화면(횟수 소진, 추천 없음, 오류)이 보이면 그때 표지를 걷습니다.
+  useMarkAppReady(outOfSwipes || (!current && !discover.isPending));
 
   return (
     // 위쪽 안전 영역만 띄웁니다. 아래는 탭 바가 차지합니다.
