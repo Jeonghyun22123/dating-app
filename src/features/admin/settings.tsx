@@ -11,6 +11,7 @@ import {
   type Economy,
 } from './api';
 import { ActionButton, Card, ListState, useActionError } from './parts';
+import { ViewportDebugSection } from './viewport-debug';
 
 const ECONOMY_FIELDS: {
   key: keyof Economy;
@@ -212,6 +213,7 @@ export function AdminSettingsSection() {
   return (
     <View className="gap-3">
       {settings.data.economy ? <EconomySection saved={settings.data.economy} /> : null}
+      <ViewportDebugSection />
       <RegionSection />
       <EmbeddingSection />
       <Text className="text-sm leading-5 text-subtle">
