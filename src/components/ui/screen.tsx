@@ -22,10 +22,12 @@ type Props = {
   footer?: ReactNode;
   /** 있으면 제목 위에 뒤로 가기 버튼을 보여줍니다 */
   onBack?: () => void;
+  /** 제목 위에 넣을 내용 (예: 로그인 화면의 로고) */
+  hero?: ReactNode;
 };
 
 /** 모든 화면의 공통 틀: 안전 영역, 키보드 대응, 스크롤, 웹에서의 최대 너비. */
-export function Screen({ title, subtitle, progress, children, footer, onBack }: Props) {
+export function Screen({ title, subtitle, progress, children, footer, onBack, hero }: Props) {
   const colors = useThemeColors();
   return (
     <SafeAreaView className="flex-1 bg-bg">
@@ -45,6 +47,7 @@ export function Screen({ title, subtitle, progress, children, footer, onBack }: 
                 <Ionicons name="chevron-back" size={28} color={colors.fg} />
               </Pressable>
             ) : null}
+            {hero}
             {title ? (
               <View className="gap-2">
                 {progress ? <Text className="text-sm font-semibold text-brand-600">{progress}</Text> : null}

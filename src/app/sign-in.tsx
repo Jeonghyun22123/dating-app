@@ -7,6 +7,7 @@ import { SocialButtons } from '@/features/social/social-buttons';
 import { ErrorText, Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { authErrorMessage, isValidEmail, signIn } from '@/lib/auth';
+import { BrandLogo } from '@/components/ui/brand-logo';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -30,7 +31,7 @@ export default function SignInScreen() {
   }
 
   return (
-    <Screen title="다시 만나서 반가워요" subtitle="계정으로 로그인해 주세요.">
+    <Screen hero={<BrandLogo />} title="다시 만나서 반가워요" subtitle="계정으로 로그인해 주세요.">
       <View className="gap-4">
         <TextField
           label="이메일"

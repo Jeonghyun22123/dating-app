@@ -76,7 +76,7 @@
 - [ ] 약관 대괄호 항목 채우기, 법률 검토
 - [x] Sightengine 키 등록
 - [ ] 베타 공개 전: "Confirm email" 켜져 있는지 확인, 셀카·신고 심사 담당 정하기
-- [ ] 앱 이름·정식 아이콘 정하기 (지금은 "Dating App"과 임시 하트 아이콘)
+- [x] 앱 이름·아이콘: **모먼트 (MOMENT)**
 
 ### Phase 7 · 하트·스포트라이트·무료 횟수 제한·받은 관심 ✅
 - 하트 지갑: 잔액은 서버 함수만 변경, 모든 변경을 `wallet_transactions` 에 기록. "하트" 화면에서 잔액·사용 내역 확인
@@ -295,7 +295,7 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 
 ## 결정이 필요한 것
 
-- **앱 이름과 정식 아이콘**: 지금은 "Dating App"과 임시 하트 아이콘입니다. 바꿀 곳: `app.json`, `public/manifest.webmanifest`, `src/app/+html.tsx`, `public/icons/`.
+- **앱 이름과 아이콘**: 모먼트 (MOMENT)로 확정. 아이콘 원본은 `assets/images/logo.png` (768px 이미지에서 생성). 스토어 출시 전 1024px 이상 원본(가능하면 벡터) 필요, 상표 출원 검토.
 - **약관·개인정보처리방침 내용**: 초안은 개발에서 만들되, 게시 전 법률 검토.
 - **얼굴 비교 서비스 선정**: Phase 9 시작 시.
 - **네이버 간편가입**: 기본 지원이 없어 별도 연동이 필요합니다. 베타 사용자 반응을 보고 결정.

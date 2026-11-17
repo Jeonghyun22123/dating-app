@@ -1,4 +1,4 @@
-# Dating App
+# 모먼트 (MOMENT)
 
 신뢰 기반 취미·동네 매칭 & 실시간 채팅 앱. 전체 기획은 [CLAUDE.md](./CLAUDE.md), 진행 상황과 다음 단계는 [ROADMAP.md](./ROADMAP.md) 참고.
 

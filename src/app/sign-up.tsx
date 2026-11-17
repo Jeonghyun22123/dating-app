@@ -8,6 +8,7 @@ import { ErrorText, Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { authErrorMessage, isValidEmail, PASSWORD_MIN, signUp } from '@/lib/auth';
+import { BrandLogo } from '@/components/ui/brand-logo';
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
@@ -49,7 +50,7 @@ export default function SignUpScreen() {
   }
 
   return (
-    <Screen title="회원가입" subtitle="만 19세 이상만 가입할 수 있어요.">
+    <Screen hero={<BrandLogo size={88} />} title="회원가입" subtitle="만 19세 이상만 가입할 수 있어요.">
       <View className="gap-4">
         <TextField
           label="이메일"
