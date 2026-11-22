@@ -82,8 +82,8 @@ export async function signPhotoPaths(paths: string[]): Promise<Map<string, strin
 export async function pickPhoto(): Promise<string | null> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    allowsEditing: true,
-    aspect: [4, 5],
+    // 자르지 않고 원본 그대로 올립니다. 화면에 보여줄 때만 칸 모양에 맞춰 잘라서 보여줍니다.
+    allowsEditing: false,
     quality: 1,
   });
   return result.canceled ? null : result.assets[0].uri;

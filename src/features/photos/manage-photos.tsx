@@ -40,7 +40,7 @@ function Tile({
   onMakeMain?: () => void;
 }) {
   return (
-    <View className="aspect-[4/5] w-[31%] overflow-hidden rounded-2xl bg-field">
+    <View className="aspect-square w-[31%] overflow-hidden rounded-2xl bg-field">
       {photo.url ? (
         <Image source={photoSource(photo.url)} transition={150} style={{ flex: 1 }} contentFit="cover" />
       ) : null}
@@ -276,7 +276,7 @@ export function ManagePhotos({ userId, onClose }: { userId: string; onClose: () 
             aria-disabled={!canAdd}
             disabled={!canAdd}
             onPress={handleAdd}
-            className={`aspect-[4/5] w-[31%] items-center justify-center rounded-2xl border-2 border-dashed border-line bg-card ${signupReview ? 'opacity-50' : ''}`}>
+            className={`aspect-square w-[31%] items-center justify-center rounded-2xl border-2 border-dashed border-line bg-card ${signupReview ? 'opacity-50' : ''}`}>
             {uploading ? (
               <ActivityIndicator color={colors.brand} />
             ) : (

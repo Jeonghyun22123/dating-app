@@ -19,7 +19,7 @@ import { useThemeColors } from '@/theme/theme-view';
 function PhotoTile({ photo, onDelete }: { photo: PhotoWithUrl; onDelete: () => void }) {
   const pending = photo.moderation_status === 'pending';
   return (
-    <View className="aspect-[4/5] w-[31%] overflow-hidden rounded-2xl bg-field">
+    <View className="aspect-square w-[31%] overflow-hidden rounded-2xl bg-field">
       {photo.url ? (
         <Image source={photoSource(photo.url)} transition={150} style={{ flex: 1 }} contentFit="cover" />
       ) : null}
@@ -119,7 +119,7 @@ export function PhotosStep({
             accessibilityLabel="사진 추가"
             disabled={!canAdd}
             onPress={handleAdd}
-            className="aspect-[4/5] w-[31%] items-center justify-center rounded-2xl border-2 border-dashed border-line bg-card">
+            className="aspect-square w-[31%] items-center justify-center rounded-2xl border-2 border-dashed border-line bg-card">
             {uploading ? (
               <ActivityIndicator color={colors.brand} />
             ) : (
