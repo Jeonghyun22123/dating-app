@@ -43,7 +43,7 @@ export function SelfieStep({
     setError(null);
     setSubmitting(true);
     try {
-      const picture = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
+      const picture = await cameraRef.current?.takePictureAsync({ quality: 0.5, shutterSound: false });
       if (!picture?.uri) throw new Error('capture_failed');
 
       const result = await (submit ? submit(picture.uri) : submitSelfie(userId, picture.uri));

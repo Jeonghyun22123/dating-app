@@ -12,7 +12,7 @@ import {
   MAX_PHOTOS,
   moderationMessage,
   photoSource,
-  pickPhoto,
+  pickPhotos,
   requestPhotoChange,
   setMainPhoto,
   uploadProfilePhoto,
@@ -126,16 +126,21 @@ export function ManagePhotos({ userId, onClose }: { userId: string; onClose: () 
     setError(null);
     setNotice(null);
     try {
-      const uri = await pickPhoto();
-      if (!uri) return;
+      const uris = await pickPhotos(MAX_PHOTOS - shown);
+      if (uris.length === 0) return;
       setUploading(true);
       // 반려된 사진의 기록이 자리를 차지하고 있으면 먼저 정리합니다 (1인당 최대 6장 제한).
-      if (all.length >= MAX_PHOTOS) {
+      if (all.length + uris.length > MAX_PHOTOS) {
         await Promise.all(
           all.filter((photo) => photo.moderation_status === 'rejected').map(deleteProfilePhoto),
         );
       }
-      await uploadProfilePhoto(userId, uri, Math.min(shown, MAX_PHOTOS - 1), false);
+      // 고른 사진을 한꺼번에 올립니다. 일부가 실패해도 올라간 사진은 그대로 둡니다.
+      const results = await Promise.allSettled(
+        uris.map((uri, i) => uploadProfilePhoto(userId, uri, Math.min(shown + i, MAX_PHOTOS - 1), false)),
+      );
+      const failed = results.filter((result) => result.status === 'rejected').length;
+      if (failed > 0) setError(`사진 ${failed}장을 올리지 못했어요. 잠시 후 다시 시도해 주세요.`);
     } catch {
       setError('사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요.');
     } finally {

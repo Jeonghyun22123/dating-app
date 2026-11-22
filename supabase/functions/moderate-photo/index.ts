@@ -216,8 +216,12 @@ Deno.serve(async (req) => {
       return { status: 'rejected', reason: 'no_new_photos' };
     }
 
-    // 1) 셀카: 얼굴이 한 명 보이는 실제 사진이어야 합니다.
-    const selfie = await check(SELFIE_BUCKET, selfiePath, 'selfie');
+    // 1) 셀카와 새 사진을 한꺼번에 검수합니다 (하나씩 하면 사진이 많을수록 오래 걸립니다).
+    //    셀카가 통과하지 못하면 새 사진의 결과는 반영하지 않고 그대로 둡니다.
+    const [selfie, verdicts] = await Promise.all([
+      check(SELFIE_BUCKET, selfiePath, 'selfie'),
+      Promise.all(drafts.map((photo) => check(PROFILE_BUCKET, photo.storage_path, 'profile'))),
+    ]);
     if (selfie.status === 'rejected') {
       await dropSelfie();
       return selfie;
@@ -228,8 +232,8 @@ Deno.serve(async (req) => {
     let rejected = 0;
     let rejectReason: string | undefined;
     const kept: { id: string; storage_path: string }[] = [];
-    for (const photo of drafts) {
-      const verdict = await check(PROFILE_BUCKET, photo.storage_path, 'profile');
+    for (const [index, photo] of drafts.entries()) {
+      const verdict = verdicts[index];
       if (verdict.status === 'rejected') {
         rejected += 1;
         rejectReason ??= verdict.reason;

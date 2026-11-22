@@ -90,6 +90,21 @@ export async function pickPhoto(): Promise<string | null> {
 }
 
 /**
+ * 사진 보관함에서 여러 장 선택. 취소하면 빈 배열.
+ * 여러 장을 고를 때는 자르기 화면이 뜨지 않고 원본 그대로 올라갑니다 (보여줄 때 알아서 4:5로 맞춰집니다).
+ */
+export async function pickPhotos(limit: number): Promise<string[]> {
+  if (limit <= 0) return [];
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsMultipleSelection: true,
+    selectionLimit: limit,
+    quality: 1,
+  });
+  return result.canceled ? [] : result.assets.slice(0, limit).map((asset) => asset.uri);
+}
+
+/**
  * 업로드 전 처리: 긴 변 기준으로 줄이고 JPEG 로 다시 저장합니다.
  * 다시 인코딩하면서 촬영 위치(GPS) 같은 EXIF 정보도 함께 제거됩니다.
  */
