@@ -5,11 +5,13 @@ import { create } from 'zustand';
 type SplashState = {
   /** 첫 화면이 준비됨 */
   ready: boolean;
+  /** 다른 탭(채팅 목록, 내 프로필)의 데이터와 사진을 뒤에서 미리 받는 중. 끝날 때까지 표지를 유지합니다. */
+  warming: boolean;
   /** 표지가 완전히 사라짐 */
   done: boolean;
 };
 
-export const useSplashStore = create<SplashState>(() => ({ ready: false, done: false }));
+export const useSplashStore = create<SplashState>(() => ({ ready: false, warming: false, done: false }));
 
 /** 표지는 최소 이만큼 보여줍니다 (로고 애니메이션이 끝까지 보이도록). */
 export const SPLASH_MIN_MS = 1500;
@@ -19,6 +21,15 @@ export const SPLASH_MAX_MS = 5000;
 /** 첫 화면이 다 그려졌다고 알립니다. 여러 번 불러도 됩니다. */
 export function markAppReady() {
   if (!useSplashStore.getState().ready) useSplashStore.setState({ ready: true });
+}
+
+/** 다른 탭 미리 받기 시작 (표지가 이미 걷혔으면 표지를 붙잡지 않습니다). */
+export function beginWarm() {
+  if (!useSplashStore.getState().done) useSplashStore.setState({ warming: true });
+}
+
+export function endWarm() {
+  if (useSplashStore.getState().warming) useSplashStore.setState({ warming: false });
 }
 
 /** 화면이 나타나면 준비 완료로 알립니다 (when 이 false 인 동안은 기다립니다). */

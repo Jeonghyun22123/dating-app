@@ -6,6 +6,7 @@ import { hasPreferences } from '@/features/preferences/api';
 import { PreferencesScreen } from '@/features/preferences/preferences-screen';
 import { refreshEmbedding, useMyProfile } from '@/features/profile/api';
 import { useSessionTracking } from '@/features/sessions/use-session-tracking';
+import { WarmTabs } from '@/features/splash/warm-tabs';
 import { useAuthStore } from '@/stores/auth-store';
 
 export default function AppLayout() {
@@ -33,20 +34,24 @@ export default function AppLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="chat/[matchId]" />
-      <Stack.Screen name="user/[id]" />
-      <Stack.Screen name="selfie" />
-      <Stack.Screen name="settings" />
-      <Stack.Screen name="preferences" />
-      <Stack.Screen name="edit-profile" />
-      <Stack.Screen name="edit-photos" />
-      <Stack.Screen name="edit-location" />
-      <Stack.Screen name="change-password" />
-      <Stack.Screen name="delete-account" />
-      <Stack.Screen name="wallet" />
-      <Stack.Screen name="likes" />
-    </Stack>
+    <>
+      {/* 앱을 켤 때 표지 뒤에서 채팅·내 프로필 탭의 데이터와 사진을 미리 받아 둡니다 */}
+      {myId ? <WarmTabs userId={myId} /> : null}
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="chat/[matchId]" />
+        <Stack.Screen name="user/[id]" />
+        <Stack.Screen name="selfie" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="preferences" />
+        <Stack.Screen name="edit-profile" />
+        <Stack.Screen name="edit-photos" />
+        <Stack.Screen name="edit-location" />
+        <Stack.Screen name="change-password" />
+        <Stack.Screen name="delete-account" />
+        <Stack.Screen name="wallet" />
+        <Stack.Screen name="likes" />
+      </Stack>
+    </>
   );
 }

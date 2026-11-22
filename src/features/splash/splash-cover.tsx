@@ -28,7 +28,8 @@ const STAGGER_MS = 50;
 
 /** 남은 최소·최대 시간을 지켜 표지를 걷을 시점을 알려줍니다. */
 function useShouldHide(start: number) {
-  const ready = useSplashStore((s) => s.ready);
+  // 첫 화면이 준비되고, 다른 탭 미리 받기도 끝나야 걷습니다 (최대 시간이 지나면 무조건 걷음).
+  const ready = useSplashStore((s) => s.ready && !s.warming);
   const [hide, setHide] = useState(false);
   useEffect(() => {
     const elapsed = Date.now() - start;
