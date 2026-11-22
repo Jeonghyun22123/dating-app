@@ -153,6 +153,8 @@ export function ManagePhotos({ userId, onClose }: { userId: string; onClose: () 
       <SelfieStep
         userId={userId}
         title="본인 확인 셀카"
+        submittingText="사진 변경 요청 중이에요"
+        confirmText="이 셀카로 사진 변경을 요청할까요? 요청하면 검토가 시작돼요."
         subtitle="새 사진이 본인인지 확인하기 위해 지금 셀카를 한 장 찍어 주세요. 셀카는 프로필에 공개되지 않고, 검토가 끝나는 즉시 삭제됩니다."
         onBack={() => setTakingSelfie(false)}
         submit={async (uri) => {

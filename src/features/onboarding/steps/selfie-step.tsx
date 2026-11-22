@@ -1,6 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Image } from 'expo-image';
 import { useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { ErrorText, Screen } from '@/components/ui/screen';
@@ -19,6 +20,8 @@ export function SelfieStep({
   subtitle = '프로필 사진이 본인인지 확인하기 위한 절차예요. 촬영한 셀카는 프로필에 공개되지 않고, 확인이 끝나는 즉시 삭제됩니다.',
   submit,
   onBack,
+  submittingText = '셀카를 제출하는 중이에요',
+  confirmText = '이 사진으로 제출할까요?',
 }: {
   userId: string;
   progress?: string;
@@ -32,21 +35,38 @@ export function SelfieStep({
    */
   submit?: (uri: string) => Promise<ModerationResult>;
   onBack?: () => void;
+  /** 제출하는 동안 사진 위에 보여줄 문구 */
+  submittingText?: string;
+  /** 찍은 사진을 보여주며 물어볼 문구 */
+  confirmText?: string;
 }) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 찍은 사진. 있으면 카메라 대신 이 사진을 보여주고 제출 여부를 묻습니다.
+  const [captured, setCaptured] = useState<string | null>(null);
 
+  // 1) 촬영: 사진만 찍고 바로 제출하지 않습니다.
   async function handleCapture() {
     setError(null);
-    setSubmitting(true);
     try {
       const picture = await cameraRef.current?.takePictureAsync({ quality: 0.5, shutterSound: false });
       if (!picture?.uri) throw new Error('capture_failed');
+      setCaptured(picture.uri);
+    } catch {
+      setError('사진을 찍지 못했어요. 다시 시도해 주세요.');
+    }
+  }
 
-      const result = await (submit ? submit(picture.uri) : submitSelfie(userId, picture.uri));
+  // 2) 확인 후 제출: 이때부터 "제출하는 중" 표시를 보여줍니다.
+  async function handleSubmit() {
+    if (!captured) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const result = await (submit ? submit(captured) : submitSelfie(userId, captured));
       if (result.status === 'rejected') {
         setError(moderationMessage(result.reason));
       } else if (result.status === 'pending' && !submit) {
@@ -77,20 +97,40 @@ export function SelfieStep({
       footer={
         <>
           <ErrorText>{error}</ErrorText>
-          {granted ? (
-            <Button
-              title="촬영하고 제출"
-              onPress={handleCapture}
-              loading={submitting}
-              disabled={!cameraReady}
-            />
+          {captured ? (
+            <>
+              <Button title="이 사진으로 제출" onPress={handleSubmit} disabled={submitting} />
+              <Button
+                title="다시 찍기"
+                variant="secondary"
+                onPress={() => {
+                  setError(null);
+                  setCaptured(null);
+                  setCameraReady(false);
+                }}
+                disabled={submitting}
+              />
+            </>
+          ) : granted ? (
+            <Button title="촬영하기" onPress={handleCapture} disabled={!cameraReady} />
           ) : (
             <Button title="카메라 사용 허용" onPress={requestPermission} disabled={!permission} />
           )}
         </>
       }>
       <View className="aspect-[3/4] w-full overflow-hidden rounded-3xl bg-neutral-900">
-        {granted ? (
+        {captured ? (
+          <>
+            <Image source={{ uri: captured }} style={{ flex: 1 }} contentFit="cover" />
+            {submitting ? (
+              <View className="absolute bottom-0 left-0 right-0 top-0 items-center justify-center gap-3 bg-black/60 px-6">
+                <ActivityIndicator size="large" color="#ffffff" />
+                <Text className="text-center text-base font-semibold text-white">{submittingText}</Text>
+                <Text className="text-center text-sm text-neutral-300">잠시만 기다려 주세요</Text>
+              </View>
+            ) : null}
+          </>
+        ) : granted ? (
           <CameraView
             ref={cameraRef}
             style={{ flex: 1 }}
@@ -112,7 +152,7 @@ export function SelfieStep({
         )}
       </View>
       <Text className="text-sm leading-5 text-muted">
-        밝은 곳에서 얼굴 전체가 보이도록, 혼자 정면을 보고 촬영해 주세요.
+        {captured ? confirmText : '밝은 곳에서 얼굴 전체가 보이도록, 혼자 정면을 보고 촬영해 주세요.'}
       </Text>
     </Screen>
   );
