@@ -14,10 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import {
-  KeyboardAvoidingView as NativeKeyboardAvoidingView,
-  useReanimatedKeyboardAnimation,
-} from 'react-native-keyboard-controller';
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -201,13 +198,15 @@ function Bubble({
 const TOUCH_MOVE_DISTANCE = 12;
 
 /**
- * 앱 전용: 화면 맨 아래 홈 바 여백. 키보드가 올라올수록 0 으로 줄어들어,
- * 키보드가 움직이는 동안 입력창과 키보드 사이에 틈이 생기지 않습니다.
+ * 앱 전용: 입력창 아래 칸. 높이는 max(키보드 높이, 홈 바 여백) 이라서
+ * 키보드가 움직이는 동안 입력창이 키보드에 딱 붙어 따라가고,
+ * 키보드가 홈 바 높이보다 낮아지면 그 자리에서 멈춥니다(카카오톡과 같은 동작).
  */
-function BottomInsetSpacer({ color }: { color: string }) {
+function KeyboardFollowSpacer({ color }: { color: string }) {
   const bottom = useSafeAreaInsets().bottom;
-  const { progress } = useReanimatedKeyboardAnimation();
-  const style = useAnimatedStyle(() => ({ height: bottom * (1 - progress.value) }));
+  const { height } = useReanimatedKeyboardAnimation();
+  // height 는 키보드가 올라올수록 음수(-키보드 높이)가 됩니다.
+  const style = useAnimatedStyle(() => ({ height: Math.max(-height.value, bottom) }));
   return <Animated.View style={[style, { backgroundColor: color }]} />;
 }
 
@@ -351,14 +350,14 @@ export default function ChatScreen() {
   const rows = toRows(messages.data ?? [], myId);
 
   // 앱: 키보드가 움직이는 만큼 입력창·대화창이 같이 움직입니다(카카오톡처럼). 웹은 예전 방식 그대로.
-  const Avoider: typeof NativeKeyboardAvoidingView =
-    Platform.OS === 'web' ? (WebKeyboardAvoidingView as never) : NativeKeyboardAvoidingView;
+  // 앱은 아래 KeyboardFollowSpacer 가 키보드 높이만큼 자리를 차지하므로 평범한 View 면 충분합니다.
+  const Avoider = Platform.OS === 'web' ? WebKeyboardAvoidingView : View;
 
   return (
     <SafeAreaView
       className="flex-1 bg-bg"
       edges={Platform.OS === 'web' ? undefined : ['top', 'left', 'right']}>
-      <Avoider style={{ flex: 1 }} behavior="padding">
+      <Avoider style={{ flex: 1 }} {...(Platform.OS === 'web' ? { behavior: undefined } : {})}>
         <View className="flex-row items-center border-b border-line bg-card px-3 py-3">
           {/* 왼쪽: 뒤로 가기 + 다른 대화의 안 읽은 메시지 수 */}
           <View className="flex-1 items-start">
@@ -475,7 +474,7 @@ export default function ChatScreen() {
             <Text className="text-center text-sm text-muted">대화가 종료되어 메시지를 보낼 수 없어요.</Text>
           </View>
         )}
-        {Platform.OS === 'web' ? null : <BottomInsetSpacer color={colors.card} />}
+        {Platform.OS === 'web' ? null : <KeyboardFollowSpacer color={colors.card} />}
       </Avoider>
 
       <Modal
