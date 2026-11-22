@@ -409,9 +409,7 @@ export default function ChatScreen() {
                 <Image source={{ uri: pendingPhoto.uri }} style={{ flex: 1 }} contentFit="contain" />
               </View>
             ) : null}
-            <Text className="text-sm leading-5 text-muted">
-              전송 전에 유해한 사진이 아닌지 자동으로 확인해요. 촬영 위치 같은 정보는 지우고 보내요.
-            </Text>
+            <Text className="text-sm leading-5 text-muted">촬영 위치 같은 정보는 지우고 보내요.</Text>
             <Button title="보내기" onPress={handleSendPhoto} loading={sendingPhoto} />
             <Button
               title="취소"

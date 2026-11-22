@@ -1,6 +1,7 @@
 // =====================================================================
 // send-chat-image
-// 채팅에 올린 사진을 AI 로 검수한 뒤, 통과하면 사진 메시지로 만들어 줍니다.
+// 채팅에 올린 사진을 사진 메시지로 만들어 줍니다. 사진 내용은 검수하지 않습니다 (자유로운 대화를 위해).
+// 사진 검수는 프로필 사진(가입·사진 변경)에만 합니다 (moderate-photo).
 //
 // 호출 (앱에서 supabase.functions.invoke('send-chat-image', { body })):
 //   { "match_id": "<매칭 id>", "path": "<매칭 id>/<내 id>/<파일명>.jpg" }
@@ -13,11 +14,9 @@
 // 동작
 //   1. 호출자가 로그인한 사용자이고, 이 매칭의 당사자이며, 매칭이 진행 중이고, 차단·정지 상태가 아닌지 확인
 //   2. 파일이 호출자 본인 폴더에 있는지 확인 (남의 파일을 내 메시지로 만들 수 없음)
-//   3. 1분에 사진 10장까지만 (Sightengine 사용량·도배 방지)
-//   4. Sightengine 으로 노출·무기·약물·잔인함·혐오 검사. 기준에 못 미치더라도 애매하면(기준의 70% 이상) 보내지 않습니다.
-//      검사를 못 한 경우(API 오류)도 보내지 않습니다 (fail-closed). 프로필 사진과 달리 얼굴·AI 생성 여부는 보지 않습니다.
-//   5. 통과하면 service_role 로 메시지를 만듭니다 (앱은 messages.image_url 을 직접 쓸 수 없어서 이 검수를 건너뛸 수 없음).
-//   - Sightengine 키가 없으면 테스트 모드로 통과 처리합니다.
+//   3. 1분에 사진 10장까지만 (도배 방지)
+//   4. 메시지를 만듭니다. 앱은 messages.image_url 을 직접 쓸 수 없어서, 사진 메시지는 이 함수로만 만들어집니다.
+//   - 원치 않는 사진은 받는 사람이 [신고하기] / [차단하기] 로 대응합니다. 신고하면 사진도 증거로 함께 넘어갑니다.
 //
 // 이 파일은 대시보드 편집기에 그대로 붙여넣을 수 있도록 다른 파일을 import 하지 않습니다.
 // =====================================================================
@@ -35,71 +34,11 @@ const MAX_PER_MINUTE = 10;
 /** 사진 메시지의 content 칸에 들어가는 글자 (채팅 목록 미리보기, 신고 스냅샷에서 이 글자가 보입니다) */
 const IMAGE_CONTENT = '📷 사진';
 
-type Verdict = { status: 'approved' | 'rejected'; reason?: string };
-
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
-}
-
-function numberEnv(name: string, fallback: number) {
-  const value = Number(Deno.env.get(name));
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
-function maxScore(value: unknown): number {
-  if (typeof value === 'number') return value;
-  if (!value || typeof value !== 'object') return 0;
-  let max = 0;
-  for (const inner of Object.values(value)) max = Math.max(max, maxScore(inner));
-  return max;
-}
-
-async function checkWithSightengine(imageUrl: string, apiUser: string, apiSecret: string): Promise<Verdict> {
-  const params = new URLSearchParams({
-    url: imageUrl,
-    models: 'nudity-2.1,weapon,recreational_drug,gore-2.0,offensive-2.0',
-    api_user: apiUser,
-    api_secret: apiSecret,
-  });
-  let result: Record<string, any>;
-  try {
-    const res = await fetch(`https://api.sightengine.com/1.0/check.json?${params}`);
-    result = await res.json();
-    if (!res.ok || result.status !== 'success') {
-      console.error('[send-chat-image] sightengine error', res.status, result?.error);
-      return { status: 'rejected', reason: 'moderation_unavailable' };
-    }
-  } catch (error) {
-    console.error('[send-chat-image] sightengine request failed', error);
-    return { status: 'rejected', reason: 'moderation_unavailable' };
-  }
-
-  // 기준의 이 비율을 넘으면 애매한 사진으로 보고 보내지 않습니다.
-  const GRAY = 0.7;
-  const nudityLimit = numberEnv('MODERATION_NUDITY_THRESHOLD', 0.5);
-  const offensiveLimit = numberEnv('MODERATION_OFFENSIVE_THRESHOLD', 0.6);
-  const nudity = result.nudity ?? {};
-  const nudityScore = Math.max(
-    nudity.sexual_activity ?? 0,
-    nudity.sexual_display ?? 0,
-    nudity.erotica ?? 0,
-    nudity.very_suggestive ?? 0,
-  );
-  if (nudityScore >= nudityLimit * GRAY) return { status: 'rejected', reason: 'nudity' };
-
-  const checks: [number, string][] = [
-    [maxScore(result.weapon), 'weapon'],
-    [maxScore(result.recreational_drug), 'drug'],
-    [maxScore(result.gore), 'gore'],
-    [maxScore(result.offensive), 'offensive'],
-  ];
-  for (const [score, reason] of checks) {
-    if (score >= offensiveLimit * GRAY) return { status: 'rejected', reason };
-  }
-  return { status: 'approved' };
 }
 
 Deno.serve(async (req) => {
@@ -109,9 +48,6 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const apiUser = Deno.env.get('SIGHTENGINE_API_USER') ?? '';
-  const apiSecret = Deno.env.get('SIGHTENGINE_API_SECRET') ?? '';
-  const testMode = !apiUser || !apiSecret;
 
   // 1) 호출자 확인
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
@@ -163,7 +99,7 @@ Deno.serve(async (req) => {
     return json({ status: 'rejected', reason: 'not_allowed' });
   }
 
-  // 3) 도배·비용 방지
+  // 3) 도배 방지
   const since = new Date(Date.now() - 60_000).toISOString();
   const { count: recent } = await admin
     .from('messages')
@@ -176,22 +112,9 @@ Deno.serve(async (req) => {
     return json({ status: 'rejected', reason: 'too_many' });
   }
 
-  // 4) 검수
-  const { data: signed, error: signError } = await admin.storage.from(BUCKET).createSignedUrl(path, 120);
-  if (signError || !signed) {
-    return json({ status: 'rejected', reason: 'file_missing' });
-  }
-  let verdict: Verdict;
-  if (testMode) {
-    console.warn('[send-chat-image] TEST MODE: Sightengine 키가 없어 검수 없이 통과 처리합니다.');
-    verdict = { status: 'approved' };
-  } else {
-    verdict = await checkWithSightengine(signed.signedUrl, apiUser, apiSecret);
-  }
-  if (verdict.status !== 'approved') {
-    await drop();
-    return json({ status: 'rejected', reason: verdict.reason, test_mode: testMode });
-  }
+  // 4) 파일이 실제로 올라와 있는지만 확인합니다 (내용은 보지 않음).
+  const { error: signError } = await admin.storage.from(BUCKET).createSignedUrl(path, 30);
+  if (signError) return json({ status: 'rejected', reason: 'file_missing' });
 
   // 5) 사진 메시지 만들기
   const { data: message, error: insertError } = await admin
@@ -204,5 +127,5 @@ Deno.serve(async (req) => {
     await drop();
     return json({ error: 'insert_failed' }, 500);
   }
-  return json({ status: 'sent', message, test_mode: testMode });
+  return json({ status: 'sent', message });
 });

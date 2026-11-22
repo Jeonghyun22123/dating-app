@@ -113,34 +113,25 @@ export async function pickChatPhoto(): Promise<PickedChatPhoto | null> {
   return { uri: asset.uri, width: asset.width, height: asset.height };
 }
 
-/** 검수에서 막혔거나 보내지 못한 이유 (화면에 그대로 보여줄 수 있는 한글 문장) */
+/** 보내지 못한 이유 (화면에 그대로 보여줄 수 있는 한글 문장) */
 export class ChatImageError extends Error {}
 
 function rejectionMessage(reason: string | undefined): string {
   switch (reason) {
-    case 'nudity':
-      return '노출이 포함된 사진은 보낼 수 없어요.';
-    case 'weapon':
-    case 'drug':
-    case 'gore':
-    case 'offensive':
-      return '부적절한 내용이 포함된 사진이라 보낼 수 없어요.';
     case 'too_many':
       return '사진을 너무 빨리 보내고 있어요. 잠시 후 다시 시도해 주세요.';
     case 'match_closed':
       return '대화가 종료되어 사진을 보낼 수 없어요.';
     case 'not_allowed':
       return '지금은 사진을 보낼 수 없어요.';
-    case 'moderation_unavailable':
-      return '사진을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.';
     default:
       return '사진을 보내지 못했어요. 잠시 후 다시 시도해 주세요.';
   }
 }
 
 /**
- * 사진 보내기: 줄여서(촬영 위치 등 EXIF 도 이때 사라집니다) 올리고 → 서버가 AI 로 검수한 뒤 → 통과하면 사진 메시지가 됩니다.
- * 통과하지 못하면 서버가 파일을 지우고 이유를 알려 주며, 그 이유를 담은 ChatImageError 를 던집니다.
+ * 사진 보내기: 줄여서(촬영 위치 등 EXIF 도 이때 사라집니다) 올리고 → 서버가 대화 당사자인지 등을 확인한 뒤 사진 메시지로 만듭니다.
+ * 사진 내용은 검수하지 않습니다. 보내지 못하면 서버가 파일을 지우고, 그 이유를 담은 ChatImageError 를 던집니다.
  */
 export async function sendChatImage(matchId: string, myId: string, photo: PickedChatPhoto): Promise<void> {
   const longSide = Math.max(photo.width, photo.height);
@@ -170,7 +161,7 @@ export async function sendChatImage(matchId: string, myId: string, photo: Picked
       .from(CHAT_IMAGE_BUCKET)
       .remove([path])
       .catch(() => {});
-    throw new ChatImageError(rejectionMessage('moderation_unavailable'));
+    throw new ChatImageError(rejectionMessage(undefined));
   }
   if (data.status !== 'sent' || !data.message) throw new ChatImageError(rejectionMessage(data.reason));
 

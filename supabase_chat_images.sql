@@ -10,7 +10,8 @@
 --   3. 보기: 그 매칭의 당사자만 (신고된 대화의 증거 확인용으로 관리자도 가능).
 --      관리자는 messages 표를 볼 수 없어 경로를 알 수 없고, 신고로 넘어온 스냅샷의 경로로만 열람합니다.
 --   4. 메시지로 만드는 것은 서버 함수(send-chat-image)만 합니다. 앱은 messages.image_url 을 직접 넣을 수 없습니다
---      (supabase_phase3.sql 에서 이미 막혀 있음). 그래서 AI 검수를 건너뛰고 사진을 보낼 수 없습니다.
+--      (supabase_phase3.sql 에서 이미 막혀 있음). 서버 함수가 대화 당사자·차단·도배를 확인합니다.
+--      채팅 사진은 사진 내용을 검수하지 않습니다 (검수는 프로필 사진에만). 원치 않는 사진은 신고·차단으로 대응합니다.
 -- =====================================================================
 
 begin;
@@ -63,7 +64,7 @@ create policy "chat-images: delete own"
 on storage.objects for delete to authenticated
 using (bucket_id = 'chat-images' and (storage.foldername(name))[2] = auth.uid()::text);
 
--- 사진 메시지 도배·검수 비용 방지용 (서버 함수가 1분에 보낸 사진 수를 셉니다)
+-- 사진 메시지 도배 방지용 (서버 함수가 1분에 보낸 사진 수를 셉니다)
 create index if not exists messages_image_rate_idx
   on messages (sender_id, created_at desc) where image_url is not null;
 
