@@ -192,13 +192,12 @@ function Bubble({
   );
 }
 
-/** 키보드가 내려갈 만큼 아래로 끌었다고 보는 거리(px) */
-const DRAG_DISMISS_DISTANCE = 12;
+/** 이 거리(px)보다 많이 움직이면 "끌었다"고 보고, 적게 움직이고 떼면 "눌렀다"고 봅니다 */
+const TOUCH_MOVE_DISTANCE = 12;
 
 /**
- * 웹: 대화 목록에서 키보드를 다루는 방식.
- *  - 목록을 눌러도(탭) 키보드는 그대로 둡니다. 웹 브라우저는 입력칸 밖을 누르면 입력을 끝내 버리므로,
- *    마우스/터치를 누르는 순간의 기본 동작을 막아 입력칸이 계속 선택된 상태를 유지합니다.
+ * 웹: 대화 목록에서 키보드를 내리는 방법 두 가지.
+ *  - 목록을 누르면(탭) 키보드를 내립니다. 아이폰 사파리는 입력칸 밖을 눌러도 키보드를 내리지 않아서 직접 처리합니다.
  *  - 손가락을 아래로 끌면(옛 메시지를 보려고 내릴 때) 키보드를 내립니다. 위로 끄는 동작은 그대로 둡니다.
  *    스크롤 이벤트를 쓰면 메시지를 보낼 때 자동 스크롤에도 키보드가 꺼지므로, 손가락 움직임을 직접 봅니다.
  * 휴대폰 앱은 기본 기능(keyboardDismissMode)을 씁니다. iOS 는 손가락을 따라 키보드가 내려가는 interactive 방식입니다.
@@ -210,28 +209,32 @@ function useDragToDismissKeyboard(listRef: RefObject<FlatList<Row> | null>, read
     const node = listRef.current?.getScrollableNode?.() as HTMLElement | undefined;
     if (!node) return;
     let startY: number | null = null;
+    let moved = false;
     const onStart = (event: TouchEvent) => {
       startY = event.touches[0]?.clientY ?? null;
+      moved = false;
     };
     const onMove = (event: TouchEvent) => {
       const y = event.touches[0]?.clientY;
-      if (startY !== null && y !== undefined && y - startY > DRAG_DISMISS_DISTANCE) {
+      if (startY === null || y === undefined) return;
+      if (Math.abs(y - startY) > TOUCH_MOVE_DISTANCE) moved = true;
+      if (y - startY > TOUCH_MOVE_DISTANCE) {
         startY = null;
         Keyboard.dismiss();
       }
     };
-    const keepFocus = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName)) return;
-      event.preventDefault();
+    const onEnd = () => {
+      // 거의 움직이지 않고 뗐으면 누른 것입니다.
+      if (startY !== null && !moved) Keyboard.dismiss();
+      startY = null;
     };
     node.addEventListener('touchstart', onStart, { passive: true });
     node.addEventListener('touchmove', onMove, { passive: true });
-    node.addEventListener('mousedown', keepFocus);
+    node.addEventListener('touchend', onEnd, { passive: true });
     return () => {
       node.removeEventListener('touchstart', onStart);
       node.removeEventListener('touchmove', onMove);
-      node.removeEventListener('mousedown', keepFocus);
+      node.removeEventListener('touchend', onEnd);
     };
   }, [listRef, ready]);
 }
@@ -387,7 +390,7 @@ export default function ChatScreen() {
             keyExtractor={(item) => item.message.id}
             renderItem={({ item }) => <Bubble row={item} other={other} onOpenProfile={openProfile} />}
             contentContainerClassName="px-4 py-3"
-            keyboardShouldPersistTaps="always"
+            keyboardShouldPersistTaps="handled"
             // 대화 목록을 끌면 키보드가 내려갑니다. 앱(iOS)은 카카오톡처럼 손가락을 따라 내려가고, 웹은 위의 useDragToDismissKeyboard.
             keyboardDismissMode={
               Platform.OS === 'web' ? 'none' : Platform.OS === 'ios' ? 'interactive' : 'on-drag'
