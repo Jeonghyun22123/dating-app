@@ -2,8 +2,9 @@ import '../global.css';
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { Button } from '@/components/ui/button';
 import { LoadingScreen, Screen } from '@/components/ui/screen';
@@ -154,21 +155,29 @@ function ThemedStatusBar() {
   return <StatusBar style={colors.dark ? 'light' : 'dark'} />;
 }
 
+/** 앱(네이티브)에서만 키보드 움직임을 화면이 매 순간 따라가도록 합니다. 웹은 그대로 둡니다. */
+function NativeKeyboard({ children }: { children: React.ReactNode }) {
+  if (Platform.OS === 'web') return <>{children}</>;
+  return <KeyboardProvider>{children}</KeyboardProvider>;
+}
+
 export default function RootLayout() {
   return (
     // 카드 밀기 같은 제스처가 동작하려면 앱 전체를 이 뷰로 감싸야 합니다.
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* 앱 전체에 현재 테마의 색을 적용합니다 */}
-      <ThemeView style={{ flex: 1 }}>
-        {/* 웹: 시계 줄·홈 바 여백을 직접 읽어 알려줍니다 (아이폰 홈 화면 앱 보정) */}
-        <WebSafeArea>
-          <AppProviders>
-            <ThemedStatusBar />
-            <RootNavigator />
-            <SplashCover />
-          </AppProviders>
-        </WebSafeArea>
-      </ThemeView>
+      <NativeKeyboard>
+        {/* 앱 전체에 현재 테마의 색을 적용합니다 */}
+        <ThemeView style={{ flex: 1 }}>
+          {/* 웹: 시계 줄·홈 바 여백을 직접 읽어 알려줍니다 (아이폰 홈 화면 앱 보정) */}
+          <WebSafeArea>
+            <AppProviders>
+              <ThemedStatusBar />
+              <RootNavigator />
+              <SplashCover />
+            </AppProviders>
+          </WebSafeArea>
+        </ThemeView>
+      </NativeKeyboard>
     </GestureHandlerRootView>
   );
 }

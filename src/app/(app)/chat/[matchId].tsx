@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   FlatList,
   Keyboard,
-  KeyboardAvoidingView,
+  KeyboardAvoidingView as WebKeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -14,7 +14,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView as NativeKeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import {
@@ -247,6 +248,7 @@ export default function ChatScreen() {
   const { data: matches, isPending: matchesPending } = useMatches();
   const match = matches?.find((item) => item.match_id === matchId);
   const messages = useMessages(matchId);
+  const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<Row>>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -334,9 +336,14 @@ export default function ChatScreen() {
   const openProfile = match && active ? () => router.push(`/user/${match.other_id}`) : undefined;
   const rows = toRows(messages.data ?? [], myId);
 
+  // 앱: 키보드가 움직이는 만큼 입력창·대화창이 같이 움직입니다(카카오톡처럼). 웹은 예전 방식 그대로.
+  // 아래 안전 영역 여백은 SafeAreaView 가 이미 주므로, 키보드 높이에서 그만큼 뺍니다.
+  const Avoider: typeof NativeKeyboardAvoidingView =
+    Platform.OS === 'web' ? (WebKeyboardAvoidingView as never) : NativeKeyboardAvoidingView;
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Avoider style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={-insets.bottom}>
         <View className="flex-row items-center border-b border-line bg-card px-3 py-3">
           {/* 왼쪽: 뒤로 가기 + 다른 대화의 안 읽은 메시지 수 */}
           <View className="flex-1 items-start">
@@ -453,7 +460,7 @@ export default function ChatScreen() {
             <Text className="text-center text-sm text-muted">대화가 종료되어 메시지를 보낼 수 없어요.</Text>
           </View>
         )}
-      </KeyboardAvoidingView>
+      </Avoider>
 
       <Modal
         visible={!!pendingPhoto}
