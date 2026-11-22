@@ -33,6 +33,8 @@ import {
   type Message,
   type PickedChatPhoto,
 } from '@/features/chat/api';
+import { KeyboardDebug } from '@/features/chat/keyboard-debug';
+import { useMyProfile } from '@/features/profile/api';
 import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { useAuthStore } from '@/stores/auth-store';
@@ -196,6 +198,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const { matchId } = useLocalSearchParams<{ matchId: string }>();
   const myId = useAuthStore((s) => s.session?.user.id);
+  const isAdmin = useMyProfile().data?.role === 'admin';
   const { data: matches, isPending: matchesPending } = useMatches();
   const match = matches?.find((item) => item.match_id === matchId);
   const messages = useMessages(matchId);
@@ -352,7 +355,9 @@ export default function ChatScreen() {
         {error ? <Text className="px-4 pb-1 text-sm text-red-600">{error}</Text> : null}
 
         {active ? (
-          <View className="flex-row items-end gap-2 border-t border-line bg-card px-3 py-2">
+          <View
+            testID="chat-input-bar"
+            className="flex-row items-end gap-2 border-t border-line bg-card px-3 py-2">
             <TextInput
               accessibilityLabel="메시지 입력"
               // 웹의 파란 포커스 테두리를 없애 입력창이 두꺼워 보이지 않게 합니다.
@@ -397,6 +402,8 @@ export default function ChatScreen() {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      {isAdmin ? <KeyboardDebug barTestId="chat-input-bar" /> : null}
 
       <Modal
         visible={!!pendingPhoto}

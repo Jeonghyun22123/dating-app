@@ -46,8 +46,14 @@ function resetScroll() {
   if (window.scrollY !== 0 && !typing) window.scrollTo(0, 0);
 }
 
-/** 화면 키보드가 올라와 있는지: 보이는 영역(visualViewport)이 전체 높이보다 많이 줄어든 상태 */
+/**
+ * 화면 키보드가 올라와 있는지.
+ * 입력칸에 커서가 있으면 열린 것으로 봅니다 (아이폰 홈 화면 앱은 화면 높이 값이 바뀌지 않는 경우가 있음).
+ * 그 외에는 보이는 영역(visualViewport)이 전체 높이보다 많이 줄어든 상태를 봅니다.
+ */
 function isKeyboardOpen() {
+  const active = document.activeElement;
+  if (active && ['INPUT', 'TEXTAREA'].includes(active.tagName)) return true;
   const viewport = window.visualViewport;
   return !!viewport && window.innerHeight - viewport.height > 150;
 }
