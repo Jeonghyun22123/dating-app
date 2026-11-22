@@ -12,18 +12,7 @@ import { LikesTeaser } from '@/features/likes/likes-teaser';
 import { useAuthStore } from '@/stores/auth-store';
 import { useThemeColors } from '@/theme/theme-view';
 
-function MatchRow({
-  match,
-  myId,
-  onPress,
-  onOpenProfile,
-}: {
-  match: MatchSummary;
-  myId?: string;
-  onPress: () => void;
-  /** 상대 사진을 누르면 프로필을 엽니다 (매칭 중일 때만) */
-  onOpenProfile?: () => void;
-}) {
+function MatchRow({ match, myId, onPress }: { match: MatchSummary; myId?: string; onPress: () => void }) {
   const preview = !match.is_active
     ? '대화가 종료되었어요'
     : match.last_message
@@ -32,24 +21,14 @@ function MatchRow({
   const unread = match.unread_count > 0;
 
   return (
-    // 사진(프로필 보기)과 나머지(대화 열기)를 나란히 둔 두 개의 버튼입니다.
-    // 버튼 안에 버튼을 넣으면 웹에서 잘못된 구조가 되므로 감싸지 않습니다.
-    <View className="flex-row items-center rounded-2xl bg-card">
-      <Pressable
-        accessibilityRole="button"
-        // 대화가 끝난 상대는 프로필을 볼 수 없으므로 사진을 눌러도 대화가 열립니다.
-        accessibilityLabel={
-          onOpenProfile ? `${match.nickname}님 프로필 보기` : `${match.nickname}님과의 대화 열기`
-        }
-        onPress={onOpenProfile ?? onPress}
-        className="py-3 pl-3 pr-3">
-        <Avatar url={match.photoUrl} name={match.nickname} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${match.nickname}님과의 대화`}
-        onPress={onPress}
-        className="flex-1 gap-1 rounded-r-2xl py-3 pr-3 active:bg-field">
+    // 사진이든 이름이든 줄 어디를 눌러도 채팅방이 열립니다. (프로필은 채팅방 안에서 봅니다)
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${match.nickname}님과의 대화`}
+      onPress={onPress}
+      className="flex-row items-center gap-3 rounded-2xl bg-card p-3 active:bg-field">
+      <Avatar url={match.photoUrl} name={match.nickname} />
+      <View className="flex-1 gap-1">
         <View className="flex-row items-center justify-between gap-2">
           <Text className="text-base font-semibold text-fg">{match.nickname}</Text>
           <Text className="text-xs text-subtle">{formatTime(match.last_message_at ?? match.matched_at)}</Text>
@@ -68,8 +47,8 @@ function MatchRow({
             </View>
           ) : null}
         </View>
-      </Pressable>
-    </View>
+      </View>
+    </Pressable>
   );
 }
 
@@ -122,7 +101,6 @@ export default function MatchesScreen() {
               match={match}
               myId={myId}
               onPress={() => router.push(`/chat/${match.match_id}`)}
-              onOpenProfile={match.is_active ? () => router.push(`/user/${match.other_id}`) : undefined}
             />
           ))}
         </View>
