@@ -352,10 +352,12 @@ export default function ChatScreen() {
         {error ? <Text className="px-4 pb-1 text-sm text-red-600">{error}</Text> : null}
 
         {active ? (
-          <View className="flex-row items-end gap-2 border-t border-line bg-card px-4 py-3">
+          <View className="flex-row items-end gap-2 border-t border-line bg-card px-3 py-2">
             <TextInput
               accessibilityLabel="메시지 입력"
-              className="max-h-32 min-h-12 flex-1 rounded-2xl bg-field px-4 py-3 text-base text-fg"
+              // 웹의 파란 포커스 테두리를 없애 입력창이 두꺼워 보이지 않게 합니다.
+              className="max-h-32 min-h-10 flex-1 rounded-2xl bg-field px-4 py-2 text-base text-fg"
+              style={{ outlineWidth: 0 }}
               placeholder="메시지 보내기"
               placeholderTextColor={colors.subtle}
               value={draft}
@@ -377,16 +379,16 @@ export default function ChatScreen() {
               accessibilityLabel="사진 첨부"
               disabled={sendingPhoto}
               onPress={handleAttach}
-              className="h-12 w-12 items-center justify-center rounded-full border border-line bg-field active:opacity-70">
-              <Ionicons name="add" size={26} color={colors.fg} />
+              className="h-10 w-10 items-center justify-center rounded-full border border-line bg-field active:opacity-70">
+              <Ionicons name="add" size={24} color={colors.fg} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="보내기"
               disabled={!draft.trim() || sending}
               onPress={handleSend}
-              className={`h-12 w-12 items-center justify-center rounded-full bg-brand-500 ${!draft.trim() || sending ? 'opacity-40' : ''}`}>
-              <Ionicons name="arrow-up" size={22} color="#ffffff" />
+              className={`h-10 w-10 items-center justify-center rounded-full bg-brand-500 ${!draft.trim() || sending ? 'opacity-40' : ''}`}>
+              <Ionicons name="arrow-up" size={20} color="#ffffff" />
             </Pressable>
           </View>
         ) : (

@@ -46,12 +46,20 @@ function resetScroll() {
   if (window.scrollY !== 0 && !typing) window.scrollTo(0, 0);
 }
 
+/** 화면 키보드가 올라와 있는지: 보이는 영역(visualViewport)이 전체 높이보다 많이 줄어든 상태 */
+function isKeyboardOpen() {
+  const viewport = window.visualViewport;
+  return !!viewport && window.innerHeight - viewport.height > 150;
+}
+
 function useWebInsets() {
   const [insets, setInsets] = useState<EdgeInsets | null>(null);
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const update = () => {
-      const next = readEnvInsets();
+      const read = readEnvInsets();
+      // 키보드가 열리면 홈 바는 키보드에 가려지므로 아래 여백이 필요 없습니다. 그대로 두면 입력창과 키보드 사이가 비어 보입니다.
+      const next = isKeyboardOpen() ? { ...read, bottom: 0 } : read;
       resetScroll();
       setInsets((prev) =>
         prev &&
@@ -69,7 +77,16 @@ function useWebInsets() {
     window.addEventListener('resize', update);
     window.addEventListener('orientationchange', update);
     window.visualViewport?.addEventListener('resize', update);
+    // 입력창을 누르거나 벗어날 때도 확인합니다 (키보드 크기 값은 조금 늦게 바뀝니다).
+    const onFocusChange = () => {
+      setTimeout(update, 50);
+      setTimeout(update, 350);
+    };
+    document.addEventListener('focusin', onFocusChange);
+    document.addEventListener('focusout', onFocusChange);
     return () => {
+      document.removeEventListener('focusin', onFocusChange);
+      document.removeEventListener('focusout', onFocusChange);
       timers.forEach(clearTimeout);
       window.removeEventListener('resize', update);
       window.removeEventListener('orientationchange', update);
