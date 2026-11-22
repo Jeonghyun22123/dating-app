@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -33,8 +34,6 @@ import {
   type Message,
   type PickedChatPhoto,
 } from '@/features/chat/api';
-import { KeyboardDebug } from '@/features/chat/keyboard-debug';
-import { useMyProfile } from '@/features/profile/api';
 import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { useAuthStore } from '@/stores/auth-store';
@@ -193,15 +192,48 @@ function Bubble({
   );
 }
 
+/** 키보드가 내려갈 만큼 끌었다고 보는 거리(px) */
+const DRAG_DISMISS_DISTANCE = 12;
+
+/**
+ * 웹: 대화 목록을 손가락으로 끌면 키보드를 내립니다.
+ * 스크롤 이벤트를 쓰면 메시지를 보낼 때 자동 스크롤에도 키보드가 꺼지므로, 손가락이 실제로 움직인 경우만
+ * 목록의 화면 요소에 직접 터치 감지를 붙여 확인합니다. (휴대폰 앱은 기본 기능 keyboardDismissMode 를 씁니다)
+ */
+function useDragToDismissKeyboard(listRef: RefObject<FlatList<Row> | null>, ready: boolean) {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !ready) return;
+    const node = listRef.current?.getScrollableNode?.() as HTMLElement | undefined;
+    if (!node) return;
+    let startY: number | null = null;
+    const onStart = (event: TouchEvent) => {
+      startY = event.touches[0]?.clientY ?? null;
+    };
+    const onMove = (event: TouchEvent) => {
+      const y = event.touches[0]?.clientY;
+      if (startY !== null && y !== undefined && Math.abs(y - startY) > DRAG_DISMISS_DISTANCE) {
+        startY = null;
+        Keyboard.dismiss();
+      }
+    };
+    node.addEventListener('touchstart', onStart, { passive: true });
+    node.addEventListener('touchmove', onMove, { passive: true });
+    return () => {
+      node.removeEventListener('touchstart', onStart);
+      node.removeEventListener('touchmove', onMove);
+    };
+  }, [listRef, ready]);
+}
+
 export default function ChatScreen() {
   const colors = useThemeColors();
   const router = useRouter();
   const { matchId } = useLocalSearchParams<{ matchId: string }>();
   const myId = useAuthStore((s) => s.session?.user.id);
-  const isAdmin = useMyProfile().data?.role === 'admin';
   const { data: matches, isPending: matchesPending } = useMatches();
   const match = matches?.find((item) => item.match_id === matchId);
   const messages = useMessages(matchId);
+  const listRef = useRef<FlatList<Row>>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   // 보내기 전에 미리 보는 사진 (+ 버튼으로 고른 것)
@@ -211,6 +243,7 @@ export default function ChatScreen() {
   const [safetyOpen, setSafetyOpen] = useState(false);
 
   useChatRealtime(matchId, myId);
+  useDragToDismissKeyboard(listRef, !messages.isPending);
   useMarkAppReady(!matchesPending && !messages.isPending);
 
   // 채팅방에 들어오면 받은 메시지를 읽음 처리합니다.
@@ -337,12 +370,15 @@ export default function ChatScreen() {
           </View>
         ) : (
           <FlatList
+            ref={listRef}
             inverted
             data={rows}
             keyExtractor={(item) => item.message.id}
             renderItem={({ item }) => <Bubble row={item} other={other} onOpenProfile={openProfile} />}
             contentContainerClassName="px-4 py-3"
             keyboardShouldPersistTaps="handled"
+            // 대화 목록을 손가락으로 끌면 키보드가 내려갑니다 (웹은 위의 useDragToDismissKeyboard).
+            keyboardDismissMode={Platform.OS === 'web' ? 'none' : 'on-drag'}
             ListEmptyComponent={
               // 뒤집힌 목록 안에서는 내용도 뒤집히므로 다시 돌려 놓습니다.
               <View className="items-center py-16" style={{ transform: [{ scaleY: -1 }] }}>
@@ -402,8 +438,6 @@ export default function ChatScreen() {
           </View>
         )}
       </KeyboardAvoidingView>
-
-      {isAdmin ? <KeyboardDebug barTestId="chat-input-bar" /> : null}
 
       <Modal
         visible={!!pendingPhoto}
