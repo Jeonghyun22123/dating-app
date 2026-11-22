@@ -14,8 +14,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { KeyboardAvoidingView as NativeKeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  KeyboardAvoidingView as NativeKeyboardAvoidingView,
+  useReanimatedKeyboardAnimation,
+} from 'react-native-keyboard-controller';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import {
@@ -197,6 +201,17 @@ function Bubble({
 const TOUCH_MOVE_DISTANCE = 12;
 
 /**
+ * 앱 전용: 화면 맨 아래 홈 바 여백. 키보드가 올라올수록 0 으로 줄어들어,
+ * 키보드가 움직이는 동안 입력창과 키보드 사이에 틈이 생기지 않습니다.
+ */
+function BottomInsetSpacer({ color }: { color: string }) {
+  const bottom = useSafeAreaInsets().bottom;
+  const { progress } = useReanimatedKeyboardAnimation();
+  const style = useAnimatedStyle(() => ({ height: bottom * (1 - progress.value) }));
+  return <Animated.View style={[style, { backgroundColor: color }]} />;
+}
+
+/**
  * 웹: 대화 목록에서 키보드를 내리는 방법 두 가지.
  *  - 목록을 누르면(탭) 키보드를 내립니다. 아이폰 사파리는 입력칸 밖을 눌러도 키보드를 내리지 않아서 직접 처리합니다.
  *  - 손가락을 아래로 끌면(옛 메시지를 보려고 내릴 때) 키보드를 내립니다. 위로 끄는 동작은 그대로 둡니다.
@@ -340,7 +355,9 @@ export default function ChatScreen() {
     Platform.OS === 'web' ? (WebKeyboardAvoidingView as never) : NativeKeyboardAvoidingView;
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
+    <SafeAreaView
+      className="flex-1 bg-bg"
+      edges={Platform.OS === 'web' ? undefined : ['top', 'left', 'right']}>
       <Avoider style={{ flex: 1 }} behavior="padding">
         <View className="flex-row items-center border-b border-line bg-card px-3 py-3">
           {/* 왼쪽: 뒤로 가기 + 다른 대화의 안 읽은 메시지 수 */}
@@ -458,6 +475,7 @@ export default function ChatScreen() {
             <Text className="text-center text-sm text-muted">대화가 종료되어 메시지를 보낼 수 없어요.</Text>
           </View>
         )}
+        {Platform.OS === 'web' ? null : <BottomInsetSpacer color={colors.card} />}
       </Avoider>
 
       <Modal
