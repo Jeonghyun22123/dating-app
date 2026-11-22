@@ -17,10 +17,12 @@ export default function Root({ children }: PropsWithChildren) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        {/* 휴대폰에서 확대·축소 없이 화면 폭에 맞추고, 노치 영역까지 쓰기 */}
+        {/* 휴대폰에서 확대·축소 없이 화면 폭에 맞추고, 노치 영역까지 쓰기.
+            interactive-widget=resizes-content: 키보드가 열리면 화면을 밀어 올리지 않고 화면 크기를 줄입니다
+            (지원하지 않는 브라우저는 무시합니다). 채팅 입력창이 키보드와 함께 움직이게 하려는 시도입니다. */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover, interactive-widget=resizes-content"
         />
         <title>모먼트</title>
         <meta name="description" content="취미와 동네로 만나는 신뢰 기반 만남" />
