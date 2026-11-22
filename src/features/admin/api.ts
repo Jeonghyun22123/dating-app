@@ -46,7 +46,14 @@ export type SelfieReviewItem = {
   photoUrls: string[];
 };
 
-export type SnapshotMessage = { id: string; sender_id: string; content: string; created_at: string };
+export type SnapshotMessage = {
+  id: string;
+  sender_id: string;
+  content: string;
+  /** 사진 메시지면 chat-images 버킷 안의 경로 */
+  image_url?: string | null;
+  created_at: string;
+};
 
 export type ReportStatus = 'pending' | 'reviewed' | 'resolved';
 

@@ -134,6 +134,16 @@
   - 최소 1.5초, 최대 5초. "동작 줄이기" 설정 사용자는 페이드만
   - 웹은 HTML 에 미리 그려 앱 코드를 받기 전부터 보임 (저장된 테마 색을 먼저 읽음), 휴대폰 앱은 기본 시작 화면에서 이어짐
 
+### 추가 · 채팅 사진 보내기 ✅
+- 입력창 오른쪽 **+ 버튼** → 보관함에서 사진 선택 → 미리보기("이 사진을 보낼까요?") → 보내기. 상대에게는 사진 말풍선으로 보이고, 누르면 화면 가득 크게 봄
+- 사진은 비공개 저장소(`chat-images`, 경로 `<매칭 id>/<보낸 사람 id>/파일`)에 올라가고, **서버 함수 `send-chat-image` 가 Sightengine 으로 검수한 뒤에만** 메시지가 됨
+  - 앱은 `messages.image_url` 을 직접 쓸 수 없어 검수를 건너뛸 수 없음. 노출·무기·약물·잔인함·혐오, 애매한 점수(기준의 70%)·검사 실패는 보내지 않음. 프로필 사진과 달리 얼굴·AI 생성 여부는 보지 않음
+  - 1분에 10장까지, 진행 중인 매칭·차단/정지 아님 확인, 파일 경로가 본인 폴더인지 확인
+  - 올리기 전에 긴 변 1280px 로 줄이고 JPEG 로 다시 저장 (촬영 위치 등 EXIF 제거)
+- 보기: 그 매칭의 당사자만 (신고된 대화의 사진 증거는 관리자 신고 화면에서 열람). 탈퇴하면 그 사람이 보낸 사진 파일도 삭제
+- 알려진 한계: 매칭이 해제·삭제돼 메시지가 지워지면 사진 파일은 저장소에 남음 (정리 작업은 나중에). 사진 전송 알림 문구, 사진 여러 장 한 번에 보내기, 카메라 촬영 후 바로 보내기는 아직 없음
+- (`supabase_chat_images.sql`, Edge Function `send-chat-image` 신규 · `delete-account` 재배포)
+
 ---
 
 ## Supabase SQL 실행 순서
@@ -156,9 +166,10 @@
 | 12 | `supabase_member_profile.sql` | 상대 프로필 보기 (앱 실행에 필수) |
 | 13 | `supabase_regions.sql` | 동네 선택 + 현재 위치 인증 (실행 후 관리자 > 설정 > "동네 데이터 불러오기" 필수) |
 | 14 | `supabase_mbti.sql` | MBTI (앱 실행에 필수) |
+| 15 | `supabase_chat_images.sql` | 채팅 사진 보내기 (실행 후 `send-chat-image`·`delete-account` 함수 배포) |
 | 개발용 | `supabase_seed_test_users.sql`, `supabase_seed_reset.sql` | 가짜 프로필 생성 · 초기화 (실서비스에서 실행 금지) |
 
-Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfie`, `delete-account` 를 배포해야 합니다.
+Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfie`, `delete-account`, `send-chat-image` 를 배포해야 합니다.
 
 ---
 
@@ -225,7 +236,6 @@ Edge Function: `moderate-photo`, `update-profile-embedding`, `admin-review-selfi
 - EAS Build, iOS·Android 실기기 테스트
 - 메일 인증·비밀번호 재설정 링크로 앱이 열리게 하기 (앱 전용 주소)
 - **애플 로그인 추가** (iOS 심사 필수) + 앱에서 카카오·구글 간편가입 동작 확인
-- 채팅 사진 전송 (서버 검수 경유)
 - 앱 이름·아이콘·스플래시, App Store · Google Play 심사 제출
 
 ---

@@ -1,4 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import * as Crypto from 'expo-crypto';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect } from 'react';
 
 import { signPhotoPaths } from '@/features/photos/api';
@@ -26,11 +29,13 @@ export type Message = {
   match_id: string;
   sender_id: string;
   content: string;
+  /** 사진 메시지면 chat-images 버킷 안의 파일 경로 */
+  image_url: string | null;
   is_read: boolean;
   created_at: string;
 };
 
-const MESSAGE_COLUMNS = 'id, match_id, sender_id, content, is_read, created_at';
+const MESSAGE_COLUMNS = 'id, match_id, sender_id, content, image_url, is_read, created_at';
 
 export const matchesKey = ['matches'] as const;
 export const messagesKey = (matchId: string) => ['messages', matchId] as const;
@@ -85,6 +90,106 @@ export async function sendMessage(matchId: string, senderId: string, content: st
   if (error) throw error;
   addToCache(data as Message);
   queryClient.invalidateQueries({ queryKey: matchesKey });
+}
+
+// ---------------------------------------------------------------------
+// 사진 보내기
+// ---------------------------------------------------------------------
+export const CHAT_IMAGE_BUCKET = 'chat-images';
+/** 긴 변이 이 값을 넘으면 줄여서 올립니다 */
+const CHAT_IMAGE_MAX_SIDE = 1280;
+
+export type PickedChatPhoto = { uri: string; width: number; height: number };
+
+/** 보관함에서 사진 1장 고르기 (자르기 없음). 취소하면 null. */
+export async function pickChatPhoto(): Promise<PickedChatPhoto | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: false,
+    quality: 1,
+  });
+  if (result.canceled) return null;
+  const asset = result.assets[0];
+  return { uri: asset.uri, width: asset.width, height: asset.height };
+}
+
+/** 검수에서 막혔거나 보내지 못한 이유 (화면에 그대로 보여줄 수 있는 한글 문장) */
+export class ChatImageError extends Error {}
+
+function rejectionMessage(reason: string | undefined): string {
+  switch (reason) {
+    case 'nudity':
+      return '노출이 포함된 사진은 보낼 수 없어요.';
+    case 'weapon':
+    case 'drug':
+    case 'gore':
+    case 'offensive':
+      return '부적절한 내용이 포함된 사진이라 보낼 수 없어요.';
+    case 'too_many':
+      return '사진을 너무 빨리 보내고 있어요. 잠시 후 다시 시도해 주세요.';
+    case 'match_closed':
+      return '대화가 종료되어 사진을 보낼 수 없어요.';
+    case 'not_allowed':
+      return '지금은 사진을 보낼 수 없어요.';
+    case 'moderation_unavailable':
+      return '사진을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.';
+    default:
+      return '사진을 보내지 못했어요. 잠시 후 다시 시도해 주세요.';
+  }
+}
+
+/**
+ * 사진 보내기: 줄여서(촬영 위치 등 EXIF 도 이때 사라집니다) 올리고 → 서버가 AI 로 검수한 뒤 → 통과하면 사진 메시지가 됩니다.
+ * 통과하지 못하면 서버가 파일을 지우고 이유를 알려 주며, 그 이유를 담은 ChatImageError 를 던집니다.
+ */
+export async function sendChatImage(matchId: string, myId: string, photo: PickedChatPhoto): Promise<void> {
+  const longSide = Math.max(photo.width, photo.height);
+  const scale = longSide > CHAT_IMAGE_MAX_SIDE ? CHAT_IMAGE_MAX_SIDE / longSide : 1;
+  const context = ImageManipulator.manipulate(photo.uri);
+  if (scale < 1)
+    context.resize({ width: Math.round(photo.width * scale), height: Math.round(photo.height * scale) });
+  const rendered = await context.renderAsync();
+  const saved = await rendered.saveAsync({ compress: 0.8, format: SaveFormat.JPEG });
+  const bytes = await (await fetch(saved.uri)).arrayBuffer();
+
+  // 경로: <매칭 id>/<내 id>/<파일명> (서버·저장소 규칙이 이 모양을 확인합니다)
+  const path = `${matchId}/${myId}/${Crypto.randomUUID()}.jpg`;
+  const upload = await supabase.storage
+    .from(CHAT_IMAGE_BUCKET)
+    .upload(path, bytes, { contentType: 'image/jpeg' });
+  if (upload.error) throw new ChatImageError(rejectionMessage(undefined));
+
+  const { data, error } = await supabase.functions.invoke<{
+    status: 'sent' | 'rejected';
+    reason?: string;
+    message?: Message;
+  }>('send-chat-image', { body: { match_id: matchId, path } });
+  if (error || !data) {
+    // 서버에 닿지 못했거나 오류 응답: 올려 둔 파일을 치웁니다 (실패해도 무시).
+    await supabase.storage
+      .from(CHAT_IMAGE_BUCKET)
+      .remove([path])
+      .catch(() => {});
+    throw new ChatImageError(rejectionMessage('moderation_unavailable'));
+  }
+  if (data.status !== 'sent' || !data.message) throw new ChatImageError(rejectionMessage(data.reason));
+
+  addToCache(data.message);
+  queryClient.invalidateQueries({ queryKey: matchesKey });
+}
+
+/** 사진 메시지의 사진 주소 (1시간짜리 임시 주소). 채팅방에 머무는 동안 같은 주소를 씁니다. */
+export function useChatImageUrl(path: string | null) {
+  return useQuery({
+    queryKey: ['chat-image', path],
+    enabled: !!path,
+    staleTime: 50 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage.from(CHAT_IMAGE_BUCKET).createSignedUrl(path!, 60 * 60);
+      if (error || !data) throw error ?? new Error('sign_failed');
+      return data.signedUrl;
+    },
+  });
 }
 
 /** 상대가 보낸 안 읽은 메시지를 읽음 처리합니다. */

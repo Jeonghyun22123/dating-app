@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   Text,
@@ -15,22 +17,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import {
+  ChatImageError,
   formatClock,
   formatDateLine,
   markRead,
   MESSAGE_MAX,
+  pickChatPhoto,
+  sendChatImage,
   sendMessage,
   unmatch,
+  useChatImageUrl,
   useChatRealtime,
   useMatches,
   useMessages,
   type Message,
+  type PickedChatPhoto,
 } from '@/features/chat/api';
 import { SafetySheet } from '@/features/safety/safety-sheet';
 import { AnalyticsEvent, track } from '@/lib/analytics';
 import { useAuthStore } from '@/stores/auth-store';
-import { useThemeColors } from '@/theme/theme-view';
+import { ThemeView, useThemeColors } from '@/theme/theme-view';
 import { useMarkAppReady } from '@/features/splash/store';
+import { Button } from '@/components/ui/button';
+import { photoSource } from '@/features/photos/api';
+import { PhotoViewer } from '@/features/photos/photo-viewer';
 
 const AVATAR = 36;
 
@@ -70,6 +80,39 @@ function toRows(messages: Message[], myId: string | undefined): Row[] {
   });
 }
 
+/** 사진 메시지. 누르면 화면 가득 크게 봅니다. */
+function ChatImage({ path, mine }: { path: string; mine: boolean }) {
+  const colors = useThemeColors();
+  const { data: url, isError } = useChatImageUrl(path);
+  const [viewer, setViewer] = useState<number | null>(null);
+  return (
+    <>
+      <Pressable
+        testID={mine ? 'chat-image-mine' : 'chat-image-theirs'}
+        accessibilityRole="button"
+        accessibilityLabel="사진 크게 보기"
+        disabled={!url}
+        onPress={() => setViewer(0)}
+        style={{ width: 220, height: 280 }}
+        className="items-center justify-center overflow-hidden rounded-2xl bg-field">
+        {url ? (
+          <Image
+            source={photoSource(url)}
+            transition={150}
+            style={{ width: 220, height: 280 }}
+            contentFit="cover"
+          />
+        ) : isError ? (
+          <Text className="px-4 text-center text-sm text-muted">사진을 불러오지 못했어요</Text>
+        ) : (
+          <ActivityIndicator color={colors.brand} />
+        )}
+      </Pressable>
+      {url ? <PhotoViewer urls={[url]} initialIndex={viewer} onClose={() => setViewer(null)} /> : null}
+    </>
+  );
+}
+
 function Bubble({
   row,
   other,
@@ -103,9 +146,13 @@ function Bubble({
       {mine ? (
         <View className="max-w-[82%] flex-row items-end gap-1.5 self-end">
           {meta}
-          <View testID="bubble-mine" className="shrink rounded-2xl bg-brand-500 px-4 py-2.5">
-            <Text className="text-base leading-6 text-white">{message.content}</Text>
-          </View>
+          {message.image_url ? (
+            <ChatImage path={message.image_url} mine />
+          ) : (
+            <View testID="bubble-mine" className="shrink rounded-2xl bg-brand-500 px-4 py-2.5">
+              <Text className="text-base leading-6 text-white">{message.content}</Text>
+            </View>
+          )}
         </View>
       ) : (
         <View className="max-w-[88%] flex-row gap-2 self-start">
@@ -128,9 +175,13 @@ function Bubble({
               </Text>
             ) : null}
             <View className="flex-row items-end gap-1.5">
-              <View testID="bubble-theirs" className="shrink rounded-2xl bg-card px-4 py-2.5">
-                <Text className="text-base leading-6 text-fg">{message.content}</Text>
-              </View>
+              {message.image_url ? (
+                <ChatImage path={message.image_url} mine={false} />
+              ) : (
+                <View testID="bubble-theirs" className="shrink rounded-2xl bg-card px-4 py-2.5">
+                  <Text className="text-base leading-6 text-fg">{message.content}</Text>
+                </View>
+              )}
               {meta}
             </View>
           </View>
@@ -150,6 +201,9 @@ export default function ChatScreen() {
   const messages = useMessages(matchId);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  // 보내기 전에 미리 보는 사진 (+ 버튼으로 고른 것)
+  const [pendingPhoto, setPendingPhoto] = useState<PickedChatPhoto | null>(null);
+  const [sendingPhoto, setSendingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
 
@@ -162,6 +216,34 @@ export default function ChatScreen() {
   }, [matchId, myId]);
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/matches'));
+
+  async function handleAttach() {
+    setError(null);
+    try {
+      const photo = await pickChatPhoto();
+      if (photo) setPendingPhoto(photo);
+    } catch {
+      setError('사진을 불러오지 못했어요.');
+    }
+  }
+
+  async function handleSendPhoto() {
+    if (!pendingPhoto || !myId || sendingPhoto) return;
+    setError(null);
+    setSendingPhoto(true);
+    try {
+      await sendChatImage(matchId, myId, pendingPhoto);
+      track(AnalyticsEvent.MessageSent, { type: 'image' });
+      setPendingPhoto(null);
+    } catch (e) {
+      setPendingPhoto(null);
+      setError(
+        e instanceof ChatImageError ? e.message : '사진을 보내지 못했어요. 잠시 후 다시 시도해 주세요.',
+      );
+    } finally {
+      setSendingPhoto(false);
+    }
+  }
 
   async function handleSend() {
     const content = draft.trim();
@@ -292,6 +374,14 @@ export default function ChatScreen() {
             />
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="사진 첨부"
+              disabled={sendingPhoto}
+              onPress={handleAttach}
+              className="h-12 w-12 items-center justify-center rounded-full border border-line bg-field active:opacity-70">
+              <Ionicons name="add" size={26} color={colors.fg} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel="보내기"
               disabled={!draft.trim() || sending}
               onPress={handleSend}
@@ -305,6 +395,33 @@ export default function ChatScreen() {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={!!pendingPhoto}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPendingPhoto(null)}>
+        <ThemeView className="flex-1 items-center justify-center bg-black/70 px-6">
+          <View className="w-full max-w-sm gap-4 rounded-3xl bg-card p-5">
+            <Text className="text-lg font-bold text-fg">이 사진을 보낼까요?</Text>
+            {pendingPhoto ? (
+              <View className="aspect-[4/5] w-full overflow-hidden rounded-2xl bg-field">
+                <Image source={{ uri: pendingPhoto.uri }} style={{ flex: 1 }} contentFit="contain" />
+              </View>
+            ) : null}
+            <Text className="text-sm leading-5 text-muted">
+              전송 전에 유해한 사진이 아닌지 자동으로 확인해요. 촬영 위치 같은 정보는 지우고 보내요.
+            </Text>
+            <Button title="보내기" onPress={handleSendPhoto} loading={sendingPhoto} />
+            <Button
+              title="취소"
+              variant="secondary"
+              onPress={() => setPendingPhoto(null)}
+              disabled={sendingPhoto}
+            />
+          </View>
+        </ThemeView>
+      </Modal>
 
       {myId && match ? (
         <SafetySheet

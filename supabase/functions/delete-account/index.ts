@@ -76,6 +76,33 @@ Deno.serve(async (req) => {
     }
   }
 
+  // 2-b) 채팅으로 보낸 사진 삭제. 경로가 "<매칭 id>/<내 id>/..." 라서 폴더로 찾을 수 없어 메시지 기록에서 찾습니다.
+  //       (메시지는 계정 삭제 때 함께 지워지므로 그 전에 파일부터 지웁니다)
+  for (;;) {
+    const { data: sent, error: sentError } = await admin
+      .from('messages')
+      .select('id, image_url')
+      .eq('sender_id', userId)
+      .not('image_url', 'is', null)
+      .limit(500);
+    if (sentError) {
+      console.error('[delete-account] chat image lookup failed', sentError.message);
+      return json({ error: 'storage_unavailable' }, 502);
+    }
+    if (!sent || sent.length === 0) break;
+    const { error: chatRemoveError } = await admin.storage
+      .from('chat-images')
+      .remove(sent.map((row) => row.image_url as string));
+    if (chatRemoveError) {
+      console.error('[delete-account] chat image remove failed', chatRemoveError.message);
+      return json({ error: 'storage_unavailable' }, 502);
+    }
+    removed += sent.length;
+    // 같은 행을 다시 읽지 않도록 사진 연결을 끊어 둡니다 (곧 메시지 자체가 지워집니다).
+    await admin.from('messages').update({ image_url: null }).in('id', sent.map((row) => row.id));
+    if (sent.length < 500) break;
+  }
+
   // 3) 계정 삭제 → 프로필과 연결된 데이터는 DB 의 on delete cascade 로 함께 지워집니다.
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
   if (deleteError) {

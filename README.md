@@ -197,6 +197,7 @@ supabase_security_fix.sql     보안 점검 오류 정리 (쓰지 않는 뷰 삭
 supabase_member_profile.sql   상대 프로필 보기 (매칭 상대 · 시그널 보낸 사람)
 supabase_regions.sql          동네 선택 + 현재 위치 인증 (행정동 경계)
 supabase_mbti.sql             MBTI (프로필 · 둘러보기 카드)
+supabase_chat_images.sql      채팅 사진 보내기 (비공개 저장소, 접근 규칙)
 supabase_settings.sql         알림 수신 설정
 supabase_seed_test_users.sql  개발용 가짜 프로필
 supabase_seed_reset.sql       개발용: 가짜 프로필 테스트 기록 초기화

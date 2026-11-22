@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
@@ -14,6 +15,8 @@ import {
 } from './api';
 import { ActionButton, Badge, Card, ListState, useActionError } from './parts';
 import { useThemeColors } from '@/theme/theme-view';
+import { useChatImageUrl } from '@/features/chat/api';
+import { photoSource } from '@/features/photos/api';
 
 const FILTERS: { value: ReportStatus | 'all'; label: string }[] = [
   { value: 'pending', label: '대기' },
@@ -29,6 +32,22 @@ const STATUS_BADGE: Record<ReportStatus, { label: string; tone: 'amber' | 'neutr
 };
 
 const reasonLabel = (reason: string) => REPORT_REASONS.find((item) => item.value === reason)?.label ?? reason;
+
+/** 신고된 대화의 사진 증거. 관리자는 평소 대화를 볼 수 없고, 신고로 넘어온 이 경로만 열 수 있습니다. */
+function EvidenceImage({ path }: { path: string }) {
+  const { data: url, isError } = useChatImageUrl(path);
+  return (
+    <View className="h-40 w-32 items-center justify-center overflow-hidden rounded-lg bg-field">
+      {url ? (
+        <Image source={photoSource(url)} style={{ width: 128, height: 160 }} contentFit="cover" />
+      ) : (
+        <Text className="px-2 text-center text-xs text-muted">
+          {isError ? '불러오지 못했어요' : '불러오는 중…'}
+        </Text>
+      )}
+    </View>
+  );
+}
 
 function Snapshot({ report }: { report: AdminReport }) {
   const messages = report.chat_snapshot ?? [];
@@ -49,6 +68,7 @@ function Snapshot({ report }: { report: AdminReport }) {
               {formatDateTime(message.created_at)}
             </Text>
             <Text className="text-sm leading-5 text-fg">{message.content}</Text>
+            {message.image_url ? <EvidenceImage path={message.image_url} /> : null}
           </View>
         );
       })}
