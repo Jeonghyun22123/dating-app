@@ -9,15 +9,15 @@ import { calculateAge } from '@/features/identity/adult-verification';
 import { useMyPhotos } from '@/features/photos/api';
 import { refreshMyProfile, useMyProfile } from '@/features/profile/api';
 import { PURPOSES } from '@/features/profile/constants';
-import { ProfileCard } from '@/features/profile/profile-card';
+import { ProfileView } from '@/features/profile/profile-view';
 import { TrustCard, useTrustBreakdown } from '@/features/trust/trust-card';
 import { useWallet } from '@/features/wallet/api';
 import { signOut } from '@/lib/auth';
 import { useThemeColors } from '@/theme/theme-view';
 
 /**
- * 내 프로필 탭. 둘러보기에서 다른 사람에게 보이는 카드와 같은 모습으로 미리 보여줍니다.
- * 사진이 여러 장이면 옆으로 밀어 넘겨 보고, 사진을 누르면 화면 가득 크게 볼 수 있습니다.
+ * 내 프로필 탭. 다른 사람이 내 프로필을 열었을 때와 같은 모습(인스타그램 스타일)으로 보여줍니다.
+ * 사진을 누르면 화면 가득 크게 볼 수 있습니다.
  */
 export default function MyProfileScreen() {
   const router = useRouter();
@@ -64,7 +64,7 @@ export default function MyProfileScreen() {
         </Pressable>
       </View>
 
-      <ProfileCard
+      <ProfileView
         photos={photos.map((photo) => ({
           key: photo.id,
           url: photo.url!,
